@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hollys-dashboard",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "streamlit", "run", "종합.py",
+                      "--server.port", "8511", "--server.headless", "true"],
+      "port": 8511
+    }
+  ]
+}

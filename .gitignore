@@ -1,0 +1,78 @@
+# ── 비밀정보 ────────────────────────────────────────────────
+# KAKAO_API_KEY 등이 들어 있다. 절대 커밋하지 말 것.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# ── 데이터 ──────────────────────────────────────────────────
+# 공공데이터 원본은 수백 MB라 GitHub 100MB 제한에 걸린다.
+# 필요하면 각자 내려받는다.
+/source
+
+# source/ 를 다시 추적하게 되더라도 아래 대용량 파일은 계속 제외한다
+소상공인시장진흥공단_*.csv
+*.geojson
+skorea-*.json
+
+# ── 분석 결과물 ─────────────────────────────────────────────
+# 코드를 실행하면 다시 만들어지므로 저장소에 둘 이유가 없다
+/output
+
+# ── 파이썬 ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 가상환경
+.venv/
+venv/
+env/
+ENV/
+
+# 테스트 · 린트 캐시
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ── 주피터 노트북 ───────────────────────────────────────────
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# ── 에디터 · IDE ────────────────────────────────────────────
+# .venv 안을 가리키는 심볼릭 링크라 클론하면 깨진다
+.agents/
+.claude/skills/
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── 운영체제 ────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── 기타 ────────────────────────────────────────────────────
+# 화면 캡처 등 실수로 들어가기 쉬운 파일
+iScreen Shoter*
+*.log

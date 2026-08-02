@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0}
+  img,svg{max-width:100%}
+</style>
+<title>Pandas 기본 정리 — 자료구조부터 정렬까지</title>
+
+<style>
+  /* ---------- 토큰 ---------- */
+  :root {
+    --navy:   #14103c;
+    --paper:  #f6f6fa;
+    --panel:  #ffffff;
+    --ink:    #1c1935;
+    --muted:  #5f5c7d;
+    --faint:  #8b88a6;
+    --rule:   #dcdae8;
+    --rule-2: #ebe9f3;
+    --pink:   #d1047c;
+    --yellow: #ffca00;
+    --hi:     #fff4c9;
+    --ok:     #0f7a52;
+    --warn:   #b3541e;
+    --err:    #c0263c;
+    --code-bg:#f1f0f7;
+
+    --f-body: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+              -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --f-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+              "D2Coding", monospace;
+
+    --maxw: 74ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --navy:   #cdc8f0;
+      --paper:  #100e1b;
+      --panel:  #181528;
+      --ink:    #e9e7f4;
+      --muted:  #a29ec2;
+      --faint:  #7e7aa0;
+      --rule:   #322e4c;
+      --rule-2: #262239;
+      --pink:   #ff5fae;
+      --yellow: #ffca00;
+      --hi:     #3b3410;
+      --ok:     #4bd39b;
+      --warn:   #e89b5c;
+      --err:    #ff7089;
+      --code-bg:#1e1b31;
+    }
+  }
+  :root[data-theme="dark"] {
+    --navy:   #cdc8f0;
+    --paper:  #100e1b;
+    --panel:  #181528;
+    --ink:    #e9e7f4;
+    --muted:  #a29ec2;
+    --faint:  #7e7aa0;
+    --rule:   #322e4c;
+    --rule-2: #262239;
+    --pink:   #ff5fae;
+    --yellow: #ffca00;
+    --hi:     #3b3410;
+    --ok:     #4bd39b;
+    --warn:   #e89b5c;
+    --err:    #ff7089;
+    --code-bg:#1e1b31;
+  }
+  :root[data-theme="light"] {
+    --navy:   #14103c;
+    --paper:  #f6f6fa;
+    --panel:  #ffffff;
+    --ink:    #1c1935;
+    --muted:  #5f5c7d;
+    --faint:  #8b88a6;
+    --rule:   #dcdae8;
+    --rule-2: #ebe9f3;
+    --pink:   #d1047c;
+    --yellow: #ffca00;
+    --hi:     #fff4c9;
+    --ok:     #0f7a52;
+    --warn:   #b3541e;
+    --err:    #c0263c;
+    --code-bg:#f1f0f7;
+  }
+
+  /* ---------- 기본 ---------- */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px 96px;
+  }
+  @media (min-width: 1000px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; padding: 0 32px 120px; }
+  }
+
+  /* ---------- 목차 ---------- */
+  .toc { display: none; }
+  @media (min-width: 1000px) {
+    .toc {
+      display: block;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding: 40px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  }
+  .toc-h {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 14px;
+  }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .toc a {
+    display: flex;
+    gap: 9px;
+    padding: 5px 8px 5px 0;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 11px;
+    transition: color .15s, border-color .15s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a .n { font-family: var(--f-mono); font-size: 10px; color: var(--faint); padding-top: 3px; }
+  .toc a.on { color: var(--ink); border-left-color: var(--pink); font-weight: 600; }
+  .toc a.on .n { color: var(--pink); }
+  .toc a:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+
+  /* ---------- 헤더 ---------- */
+  .top { padding: 64px 0 20px; }
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin: 0 0 20px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.5vw, 52px);
+    line-height: 1.12;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    color: var(--navy);
+  }
+  .dek {
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 32px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .meta div {
+    flex: 1 1 130px;
+    padding: 14px 18px 14px 0;
+  }
+  .meta dt {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 4px;
+  }
+  .meta dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- 섹션 ---------- */
+  section { padding-top: 68px; scroll-margin-top: 24px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+  }
+  .sec-num {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pink);
+    letter-spacing: .1em;
+    flex: none;
+  }
+  h2 {
+    font-size: clamp(23px, 3.2vw, 30px);
+    line-height: 1.25;
+    letter-spacing: -.02em;
+    font-weight: 800;
+    margin: 0;
+    color: var(--navy);
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 40px 0 12px;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 26px 0 8px;
+    color: var(--ink);
+  }
+  h3 code, h4 code { font-size: .94em; }
+
+  p { margin: 0 0 14px; max-width: var(--maxw); }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; max-width: var(--maxw); }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; margin-bottom: 0; }
+  strong { font-weight: 700; }
+  a { color: var(--pink); }
+
+  code {
+    font-family: var(--f-mono);
+    font-size: .875em;
+    background: var(--code-bg);
+    padding: .12em .36em;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+
+  pre {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    background: var(--code-bg);
+    border: 1px solid var(--rule-2);
+    border-left: 3px solid var(--navy);
+    margin: 0 0 18px;
+    padding: 15px 17px;
+    overflow-x: auto;
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  .cm { color: var(--faint); }
+  .st { color: var(--ok); }
+  .kw { color: var(--pink); font-weight: 600; }
+
+  /* ---------- 표 ---------- */
+  .tw { overflow-x: auto; margin: 0 0 20px; border: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td {
+    text-align: left;
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--rule-2);
+    vertical-align: top;
+  }
+  thead th {
+    background: var(--rule-2);
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- 콜아웃 ---------- */
+  .note {
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    padding: 15px 18px;
+    margin: 0 0 20px;
+    max-width: var(--maxw);
+  }
+  .note > :last-child { margin-bottom: 0; }
+  .note .tag {
+    display: block;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    font-weight: 700;
+  }
+  .note.w { border-left: 3px solid var(--warn); }
+  .note.w .tag { color: var(--warn); }
+  .note.e { border-left: 3px solid var(--err); }
+  .note.e .tag { color: var(--err); }
+  .note.t { border-left: 3px solid var(--ok); }
+  .note.t .tag { color: var(--ok); }
+
+  /* ---------- 다이어그램 공통 ---------- */
+  .fig {
+    margin: 0 0 24px;
+    border: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .fig-body { padding: 22px 20px; overflow-x: auto; }
+  .fig-cap {
+    border-top: 1px solid var(--rule-2);
+    padding: 10px 20px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .fig-cap b { color: var(--ink); }
+  .fig-lab {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding: 11px 20px 0;
+    display: block;
+  }
+
+  /* 데이터 표 다이어그램 */
+  .dt { border-collapse: collapse; font-family: var(--f-mono); font-size: 12.5px; width: auto; }
+  .dt th, .dt td {
+    border: 1px solid var(--rule);
+    padding: 5px 11px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .dt td.tx, .dt th.tx { text-align: left; }
+  .dt thead th {
+    background: color-mix(in srgb, var(--navy) 12%, transparent);
+    color: var(--navy);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
+  }
+  .dt .ix {
+    background: var(--rule-2);
+    color: var(--muted);
+    font-weight: 700;
+    text-align: center;
+  }
+  .dt thead th.corner { background: transparent; border-color: transparent; }
+  /* 강조 */
+  .dt .pick { background: color-mix(in srgb, var(--pink) 17%, transparent); font-weight: 700; }
+  .dt .pick2 { background: var(--hi); font-weight: 700; }
+  .dt tr.out td, .dt tr.out th { opacity: .34; }
+  .dt .mask-t { color: var(--ok); font-weight: 700; text-align: center; }
+  .dt .mask-f { color: var(--faint); text-align: center; }
+
+  .dpair {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px 34px;
+    align-items: flex-start;
+  }
+  .dcol { display: flex; flex-direction: column; gap: 9px; }
+  .dcol > .cap {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .dcol > .sub { font-size: 12px; color: var(--muted); font-family: var(--f-body); }
+  .arrow {
+    align-self: center;
+    font-family: var(--f-mono);
+    font-size: 20px;
+    color: var(--pink);
+    padding: 0 2px;
+  }
+
+  /* 파이프라인 */
+  .pipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .pstep {
+    flex: 1 1 132px;
+    min-width: 132px;
+    border: 1px solid var(--rule);
+    padding: 13px 14px;
+    background: var(--paper);
+  }
+  .pstep .k {
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .pstep .t { font-weight: 700; font-size: 14px; display: block; margin-bottom: 6px; }
+  .pstep .d { font-family: var(--f-mono); font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .pstep.core { border: 2px solid var(--pink); background: color-mix(in srgb, var(--pink) 7%, transparent); }
+  .pstep.core .t { color: var(--pink); }
+
+  /* Series 다이어그램 */
+  .srs { display: flex; gap: 0; align-items: stretch; font-family: var(--f-mono); font-size: 12.5px; }
+  .srs .col { display: flex; flex-direction: column; }
+  .srs .hd {
+    padding: 4px 12px;
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    text-align: center;
+  }
+  .srs .cell {
+    border: 1px solid var(--rule);
+    padding: 6px 15px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .srs .col.i .cell { background: var(--rule-2); color: var(--muted); font-weight: 700; text-align: center; }
+  .srs .col.v .cell { border-left: none; }
+  .srs .brace {
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-family: var(--f-body);
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* 치트시트 */
+  .cheat { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 660px) { .cheat { grid-template-columns: 1fr 1fr; } }
+  .cbox { border: 1px solid var(--rule); background: var(--panel); padding: 15px 17px; }
+  .cbox h4 { margin: 0 0 9px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .11em; text-transform: uppercase; color: var(--pink); }
+  .cbox ul { margin: 0; padding-left: 0; list-style: none; }
+  .cbox li { margin-bottom: 6px; font-size: 13px; line-height: 1.55; }
+  .cbox li:last-child { margin-bottom: 0; }
+  .cbox code { font-size: 12px; }
+
+  /* 오류 도감 */
+  .errlist { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--rule); }
+  .erow { padding: 17px 19px; border-bottom: 1px solid var(--rule-2); background: var(--panel); }
+  .erow:last-child { border-bottom: none; }
+  .erow .en {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--err);
+    display: block;
+    margin-bottom: 8px;
+    word-break: break-word;
+  }
+  .erow dl { display: grid; grid-template-columns: 62px 1fr; gap: 5px 12px; margin: 0; font-size: 13.5px; }
+  .erow dt {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding-top: 5px;
+  }
+  .erow dd { margin: 0; line-height: 1.6; }
+
+  .foot {
+    margin-top: 80px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .foot p { max-width: var(--maxw); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="toc" aria-label="목차">
+    <p class="toc-h">목차</p>
+    <ol>
+      <li><a href="#map"><span class="n">00</span><span>큰 그림</span></a></li>
+      <li><a href="#ds"><span class="n">01</span><span>자료구조</span></a></li>
+      <li><a href="#read"><span class="n">02</span><span>파일 읽기</span></a></li>
+      <li><a href="#save"><span class="n">03</span><span>파일 저장</span></a></li>
+      <li><a href="#look"><span class="n">04</span><span>데이터 확인</span></a></li>
+      <li><a href="#pick"><span class="n">05</span><span>데이터 선택</span></a></li>
+      <li><a href="#filter"><span class="n">06</span><span>조건 검색</span></a></li>
+      <li><a href="#sort"><span class="n">07</span><span>정렬</span></a></li>
+      <li><a href="#errors"><span class="n">08</span><span>오류 도감</span></a></li>
+      <li><a href="#cheat"><span class="n">09</span><span>치트시트</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <header class="top">
+      <p class="eyebrow">data08 · pandas 기본</p>
+      <h1>판다스 기본기,<br>표 하나로 이해하기</h1>
+      <p class="dek">
+        Series와 DataFrame이 무엇인지부터, 파일을 읽고 저장하고 · 훑어보고 · 골라내고 · 정렬하기까지.
+        노트북에서 다룬 내용을 순서대로 다시 정리하고, 헷갈리는 부분은 표 그림으로 비교했습니다.
+      </p>
+      <dl class="meta">
+        <div><dt>다루는 범위</dt><dd>자료구조 → 입출력 → 확인 → 선택 → 정렬</dd></div>
+        <div><dt>실습 데이터</dt><dd>tips 244행 · 사원 5행</dd></div>
+        <div><dt>필요 패키지</dt><dd>pandas · openpyxl · seaborn</dd></div>
+      </dl>
+    </header>
+
+    <!-- ============ 00 큰 그림 ============ -->
+    <section id="map">
+      <div class="sec-head"><span class="sec-num">00</span><h2>큰 그림 — 판다스로 하는 일의 순서</h2></div>
+
+      <p>
+        판다스 작업은 거의 항상 같은 흐름을 따릅니다. <strong>어떤 파일이든 일단 DataFrame으로 바꿔 놓으면,
+        그 다음부터는 파일 종류와 무관하게 똑같은 방법으로 다룰 수 있다</strong>는 것이 핵심입니다.
+        이번 노트북의 목차 자체가 이 흐름을 그대로 따라갑니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 0 — 작업 흐름</span>
+        <div class="fig-body">
+          <div class="pipe">
+            <div class="pstep">
+              <span class="k">입력</span>
+              <span class="t">외부 파일</span>
+              <span class="d">.csv<br>.xlsx<br>.json<br>URL</span>
+            </div>
+            <div class="pstep">
+              <span class="k">읽기 · 02장</span>
+              <span class="t">read_*()</span>
+              <span class="d">read_csv()<br>read_excel()<br>read_json()</span>
+            </div>
+            <div class="pstep core">
+              <span class="k">중심</span>
+              <span class="t">DataFrame</span>
+              <span class="d">행 + 열 + 값<br>여기서 모든 작업</span>
+            </div>
+            <div class="pstep">
+              <span class="k">가공 · 04~07장</span>
+              <span class="t">확인 · 선택 · 정렬</span>
+              <span class="d">head() info()<br>loc[] iloc[]<br>조건검색<br>sort_values()</span>
+            </div>
+            <div class="pstep">
+              <span class="k">저장 · 03장</span>
+              <span class="t">to_*()</span>
+              <span class="d">to_csv()<br>to_excel()<br>to_json()</span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          <b>읽는 함수는 <code>pd.read_○○()</code></b> — 판다스 모듈에 붙습니다.
+          <b>저장하는 함수는 <code>df.to_○○()</code></b> — 데이터프레임에 붙습니다.
+          읽기는 "판다스야, 이 파일 읽어와", 저장은 "이 데이터프레임아, 파일로 나가"라고 기억하면 헷갈리지 않습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 01 자료구조 ============ -->
+    <section id="ds">
+      <div class="sec-head"><span class="sec-num">01</span><h2>자료구조 — Series · DataFrame · Index</h2></div>
+
+      <p>
+        분석용 데이터는 출처마다 형태가 다릅니다. 판다스의 첫 번째 목적은
+        <strong>서로 다른 유형의 데이터를 공통 포맷으로 정리</strong>하는 것이고,
+        그 공통 포맷이 바로 Series(1차원)와 DataFrame(2차원)입니다.
+      </p>
+
+      <h3>Series — 1차원, 인덱스가 값에 붙어 있다</h3>
+
+      <p>
+        NumPy 1차원 배열과 비슷하지만 결정적 차이가 하나 있습니다.
+        <strong>데이터의 위치를 가리키는 인덱스 라벨이 값과 1:1로 붙어 있다</strong>는 점입니다.
+        값 하나하나에 이름표가 달려 있는 셈입니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 1 — Series의 구조</span>
+        <div class="fig-body">
+          <div class="srs">
+            <div class="col i">
+              <div class="hd">index</div>
+              <div class="cell">서울</div>
+              <div class="cell">부산</div>
+              <div class="cell">인천</div>
+            </div>
+            <div class="col v">
+              <div class="hd">values</div>
+              <div class="cell">940</div>
+              <div class="cell">330</div>
+              <div class="cell">290</div>
+            </div>
+            <div class="brace">
+              ← 이름표(라벨)와 값이<br>짝을 이뤄 함께 저장된다
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          <b>구조</b> = 인덱스(라벨) + 값(Value). <code>sr.index</code>로 이름표만,
+          <code>sr.values</code>로 값만 따로 꺼낼 수 있습니다.
+          Series 하나에는 <b>한 가지 dtype만</b> 담깁니다.
+        </p>
+      </div>
+
+      <pre><code><span class="cm"># 리스트로 만들기 — 인덱스 직접 지정</span>
+population = pd.Series([940, 330, 290], index=[<span class="st">'서울'</span>, <span class="st">'부산'</span>, <span class="st">'인천'</span>])
+
+print(population.index)   <span class="cm"># Index(['서울', '부산', '인천'], dtype='object')</span>
+print(population.values)  <span class="cm"># [940 330 290]</span></code></pre>
+
+      <h4>만드는 방법 네 가지</h4>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th>재료</th><th>코드</th><th>인덱스가 어떻게 되는가</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>비어 있음</td>
+              <td><code>pd.Series()</code></td>
+              <td>빈 Series. <code>dtype: object</code></td>
+            </tr>
+            <tr>
+              <td>스칼라(상수)</td>
+              <td><code>pd.Series(5, index=["a","b","c"])</code></td>
+              <td>지정한 인덱스 <b>모든 칸에 같은 값 5</b>가 채워진다</td>
+            </tr>
+            <tr>
+              <td>리스트 · 튜플</td>
+              <td><code>pd.Series(['영인','여',True])</code></td>
+              <td>지정 안 하면 <code>RangeIndex(0, 1, 2…)</code> 자동 생성</td>
+            </tr>
+            <tr>
+              <td>딕셔너리</td>
+              <td><code>pd.Series({'a':1,'b':2})</code></td>
+              <td><b>키가 인덱스</b>, 값이 데이터가 된다 — 가장 자연스러운 변환</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note t">
+        <span class="tag">기억할 점</span>
+        <p>
+          딕셔너리는 이미 <code>키:값</code> 구조라서 Series의 <code>인덱스:값</code> 구조와 그대로 대응됩니다.
+          리스트나 튜플은 이름표가 없으니 판다스가 <code>0, 1, 2…</code>를 붙여줍니다.
+          이름표를 원하면 <code>index=</code>로 직접 넘기면 됩니다.
+        </p>
+      </div>
+
+      <h3>DataFrame — 2차원, Series를 열로 묶은 것</h3>
+
+      <p>
+        행(Row)과 열(Column)로 구성된 표입니다. 쉽게 말해
+        <strong>여러 개의 Series가 열로 나란히 묶여 있는 구조</strong>입니다.
+        각 열은 공통 속성을 갖는 데이터 묶음이고, 각 행은 관측 대상 하나에 대한 레코드(record)입니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 2 — DataFrame의 구조</span>
+        <div class="fig-body">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th class="corner"></th>
+                <th class="tx">이름</th><th class="tx">부서</th><th>나이</th><th>월급(만원)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th class="ix">0</th><td class="tx">김서준</td><td class="tx">영업부</td><td>28</td><td>320</td></tr>
+              <tr><th class="ix">1</th><td class="tx">이하윤</td><td class="tx">개발부</td><td>35</td><td>450</td></tr>
+              <tr><th class="ix">2</th><td class="tx">박도윤</td><td class="tx">개발부</td><td>41</td><td>520</td></tr>
+              <tr><th class="ix">3</th><td class="tx">최지우</td><td class="tx">인사부</td><td>26</td><td>280</td></tr>
+              <tr><th class="ix">4</th><td class="tx">정예린</td><td class="tx">영업부</td><td>33</td><td>410</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fig-cap">
+          <b>가로 방향 회색 칸 = 행 인덱스</b>(<code>df.index</code>) ·
+          <b>세로 방향 남색 칸 = 열 이름</b>(<code>df.columns</code>) ·
+          가운데 = 값(<code>df.values</code>).
+          <b>열 하나를 뽑으면 그것이 Series</b>입니다 — <code>df['나이']</code>는 인덱스 0~4에 값 28·35·41·26·33이 붙은 Series.
+          열마다 dtype이 달라도 됩니다(문자열·정수 혼재).
+        </p>
+      </div>
+
+      <h4>만드는 방법 두 가지</h4>
+
+      <pre><code><span class="cm"># ① 딕셔너리 — 키가 열 이름, 값 리스트가 각 열이 된다 (가장 많이 쓰는 방식)</span>
+<span class="cm">#    주의: 리스트들의 길이가 모두 같아야 한다</span>
+data = {<span class="st">'나이'</span>: [19, 30, 40], <span class="st">'직업'</span>: [<span class="st">'학생'</span>, <span class="st">'회사원'</span>, <span class="st">'연구원'</span>]}
+df = pd.DataFrame(data, index=[<span class="st">'철수'</span>, <span class="st">'영희'</span>, <span class="st">'민수'</span>])
+
+<span class="cm"># ② 2차원 리스트 — 행 단위로 넣고, 인덱스·열 이름을 따로 지정</span>
+df = pd.DataFrame([[15, <span class="st">'남'</span>, <span class="st">'덕영중'</span>], [17, <span class="st">'여'</span>, <span class="st">'수리중'</span>]],
+                  index=[<span class="st">'준서'</span>, <span class="st">'예은'</span>],
+                  columns=[<span class="st">'나이'</span>, <span class="st">'성별'</span>, <span class="st">'학교'</span>])</code></pre>
+
+      <h4>이름 바꾸기 — 직접 대입 vs <code>rename()</code></h4>
+
+      <p>
+        둘 다 가능하지만 성격이 다릅니다. 이 차이를 아는 것이 중요합니다.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:22%">방식</th><th>코드</th><th style="width:38%">특징</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>직접 대입</b></td>
+              <td><code>df.columns = ['연령','남녀','소속']</code></td>
+              <td><b>전체를 한꺼번에</b> 교체. 개수가 정확히 맞아야 하고, 원본이 바로 바뀐다</td>
+            </tr>
+            <tr>
+              <td><b>rename()</b></td>
+              <td><code>df = df.rename(columns={'나이':'연령'})</code></td>
+              <td><b>원하는 것만 골라</b> 교체. 새 객체를 반환하므로 <b>다시 대입해야</b> 반영된다</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note w">
+        <span class="tag">자주 하는 실수</span>
+        <p>
+          <code>df.rename(columns={...})</code>만 쓰고 끝내면 원본은 그대로입니다.
+          결과를 <code>df = </code>로 받거나 <code>inplace=True</code>를 줘야 합니다.
+          판다스 메서드 대부분이 <b>원본을 건드리지 않고 새 결과를 돌려주는</b> 방식이라는 걸 기억하세요.
+        </p>
+      </div>
+
+      <h3>Index — 데이터의 주소</h3>
+
+      <p>
+        Index는 행(또는 열)의 이름을 저장하는 메타데이터 객체입니다.
+        <strong>자기와 짝을 이루는 원소의 순서와 주소를 저장</strong>하며, 탐색·정렬·선택·결합의 기준이 됩니다.
+        종류는 두 가지입니다.
+      </p>
+
+      <ol>
+        <li><strong>정수형 위치 인덱스</strong> — 몇 번째인지를 나타내는 <code>0, 1, 2…</code> ▸ <code>iloc</code>이 사용</li>
+        <li><strong>인덱스 이름(라벨)</strong> — <code>'철수'</code>, <code>'서울'</code> 같은 이름 ▸ <code>loc</code>이 사용</li>
+      </ol>
+
+      <p>
+        이 두 종류가 따로 있다는 사실이 나중에 <a href="#pick"><code>loc</code>과 <code>iloc</code></a>을 이해하는 열쇠입니다.
+      </p>
+
+      <h3>NumPy와 무엇이 다른가</h3>
+
+      <p>
+        판다스는 내부적으로 NumPy 위에 만들어졌지만 목적이 다릅니다.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:20%">구분</th><th>NumPy (ndarray)</th><th>Pandas (Series / DataFrame)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>차원</b></td><td>N차원 배열</td><td>1차원(Series), 2차원 표(DataFrame)</td></tr>
+            <tr><td><b>데이터 타입</b></td><td>단일 타입만 (동질적)</td><td>열별로 다른 타입 허용 (이질적)</td></tr>
+            <tr><td><b>인덱싱</b></td><td>암묵적 위치 인덱스 <code>0,1,2…</code></td><td>명시적 행·열 라벨(문자열·날짜 지정 가능)</td></tr>
+            <tr><td><b>형태</b></td><td>순수 수치 · 행렬</td><td>엑셀 · SQL 테이블과 유사</td></tr>
+            <tr><td><b>강점</b></td><td>고속 수치 계산, 선형대수</td><td>실세계 데이터 정제 · 전처리 · 분석</td></tr>
+            <tr><td><b>약점</b></td><td>라벨이 없어 직관성 낮음, 혼합 타입 불가</td><td>메타데이터까지 저장해 메모리 사용량이 큼</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        정리하면, <strong>수치 연산 속도가 필요하면 NumPy, 이름 붙은 실세계 표 데이터를 다루려면 판다스</strong>입니다.
+        머신러닝 내부의 가중치 계산은 NumPy, CSV를 읽어 결측치를 처리하고 그룹별로 집계하는 일은 판다스의 몫입니다.
+      </p>
+    </section>
+
+    <!-- ============ 02 읽기 ============ -->
+    <section id="read">
+      <div class="sec-head"><span class="sec-num">02</span><h2>파일 읽기 — CSV · Excel · JSON</h2></div>
+
+      <p>
+        형식이 달라도 사용법은 거의 같습니다. <code>read_csv()</code>를 제대로 익히면
+        <code>read_excel()</code>은 옵션 하나(<code>sheet_name</code>)만 더 배우면 되고,
+        <code>read_json()</code>은 <code>orient</code> 하나만 추가됩니다.
+      </p>
+
+      <h3>공통 옵션</h3>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:23%">옵션</th><th>역할</th><th style="width:30%">언제 쓰는가</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>header=0</code></td>
+              <td><b>기본값</b>(정확히는 <code>'infer'</code>). 파일 첫 줄을 열 이름으로 사용</td>
+              <td>대부분의 정상적인 파일</td>
+            </tr>
+            <tr>
+              <td><code>header=None</code></td>
+              <td>열 이름이 없다고 알림 → <code>0, 1, 2…</code>가 열 이름이 된다</td>
+              <td>헤더 없는 파일. <b>안 주면 첫 데이터 줄이 헤더로 잡아먹힌다</b></td>
+            </tr>
+            <tr>
+              <td><code>names=['A','B']</code></td>
+              <td>열 이름을 직접 부여</td>
+              <td>헤더가 없거나 이름을 바꾸고 싶을 때</td>
+            </tr>
+            <tr>
+              <td><code>index_col='c0'</code></td>
+              <td>특정 열을 행 인덱스로 승격</td>
+              <td>ID·날짜 같은 식별 열이 있을 때</td>
+            </tr>
+            <tr>
+              <td><code>index_col=None</code></td>
+              <td><b>기본값</b>. <code>0,1,2…</code> 인덱스를 새로 만든다</td>
+              <td>그냥 두면 이 동작</td>
+            </tr>
+            <tr>
+              <td><code>encoding='utf-8'</code></td>
+              <td>문자 인코딩. 한글이 깨질 때 조정</td>
+              <td>윈도우에서 만든 파일은 <code>cp949</code> 또는 <code>euc-kr</code></td>
+            </tr>
+            <tr>
+              <td><code>sep='\t'</code></td>
+              <td>구분자 변경(기본은 쉼표)</td>
+              <td>탭 구분 TSV, 세미콜론 구분 파일</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><code>header</code> 옵션이 만드는 차이</h3>
+
+      <p>
+        가장 자주 실수하는 지점입니다. 헤더 없는 파일 <code>num.txt</code>를 그냥 읽으면
+        <strong>첫 번째 데이터 줄이 열 이름으로 소비되어 데이터가 한 줄 사라집니다.</strong>
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 3 — 같은 파일, header 옵션만 다르게</span>
+        <div class="fig-body">
+          <div class="dpair">
+            <div class="dcol">
+              <span class="cap">source/num.txt</span>
+              <pre style="margin:0; border-left-width:1px;"><code>1,2,3,4,5
+6,7,8,9,10</code></pre>
+              <span class="sub">헤더 줄이 없는 파일</span>
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="dcol">
+              <span class="cap">read_csv(...)</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">1행이 열 이름으로 올라가<br><b>데이터가 1줄만 남았다</b> ✗</span>
+            </div>
+
+            <div class="dcol">
+              <span class="cap">read_csv(..., header=None)</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+                  <tr><th class="ix">1</th><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">열 이름은 <code>0~4</code> 숫자,<br><b>데이터 2줄 모두 보존</b> ✓</span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          왼쪽 결과의 열 이름 <code>1 2 3 4 5</code>가 <b>원래 데이터였던 첫 줄</b>입니다.
+          읽은 직후 <code>df.head()</code>로 열 이름이 말이 되는지 반드시 확인하세요.
+        </p>
+      </div>
+
+      <h4>열과 행을 꺼내보기</h4>
+
+      <pre><code>data = pd.read_csv(<span class="st">'./source/num.txt'</span>, header=None)
+
+print(data[0])         <span class="cm"># 열 이름 0번 열 → Series</span>
+print(data.iloc[0])    <span class="cm"># 0번째 행     → Series</span>
+
+print(data.values)     <span class="cm"># 값만 (NumPy 배열)</span>
+print(data.index)      <span class="cm"># RangeIndex(start=0, stop=2, step=1)</span>
+print(data.columns)    <span class="cm"># Index([0, 1, 2, 3, 4], dtype='int64')</span></code></pre>
+
+      <div class="note t">
+        <span class="tag">규칙</span>
+        <p>
+          <code>df[...]</code>는 <b>열</b>을 뽑고, <code>df.iloc[...]</code>·<code>df.loc[...]</code>는 <b>행</b>을 뽑습니다.
+          둘 다 결과가 1차원이면 Series로 나옵니다.
+        </p>
+      </div>
+
+      <h4>파일 경로 다루기</h4>
+
+      <pre><code><span class="kw">import</span> os
+
+os.listdir(<span class="st">"./source"</span>)                            <span class="cm"># 폴더 안 파일 목록 확인</span>
+
+file_path = <span class="st">'./source/read_csv_sample.csv'</span>          <span class="cm"># ① 문자열로 직접</span>
+file_path = os.path.join(<span class="st">'source'</span>, <span class="st">'read_csv_sample.csv'</span>)  <span class="cm"># ② os 모듈 (OS 차이 자동 처리)</span></code></pre>
+
+      <p>
+        경로는 <strong>노트북이 실행되는 위치를 기준</strong>으로 해석됩니다.
+        파일이 안 열리면 먼저 <code>os.listdir()</code>로 실제 파일이 그 자리에 있는지 확인하는 게 가장 빠릅니다.
+        URL도 경로 자리에 그대로 넣을 수 있습니다.
+      </p>
+
+      <pre><code><span class="cm"># 웹에 있는 CSV를 바로 읽기 — tips 데이터셋 244행</span>
+df = pd.read_csv(<span class="st">'https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv'</span>)</code></pre>
+
+      <h3>Excel 읽기</h3>
+
+      <p>
+        엑셀의 행·열이 데이터프레임의 행·열로 일대일 대응됩니다.
+        <code>header</code>, <code>index_col</code> 등 CSV의 옵션을 그대로 쓸 수 있고,
+        <strong>시트 개념이 있다는 점만 다릅니다.</strong>
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:34%"><code>sheet_name</code> 값</th><th>반환</th></tr></thead>
+          <tbody>
+            <tr><td><code>0</code> <span style="color:var(--faint)">(기본값)</span></td><td>첫 번째 시트 → DataFrame</td></tr>
+            <tr><td><code>'Sheet1'</code></td><td>이름으로 지정한 시트 → DataFrame</td></tr>
+            <tr><td><code>['Sheet1','Sheet2']</code></td><td>지정한 시트들 → <b>딕셔너리</b> <code>{시트명: DataFrame}</code></td></tr>
+            <tr><td><code>None</code></td><td><b>모든</b> 시트 → <b>딕셔너리</b> <code>{시트명: DataFrame}</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><code>excel_file = pd.read_excel(<span class="st">'source/read_excel_sample.xlsx'</span>, sheet_name=<span class="st">'Sheet1'</span>)
+
+<span class="cm"># 모든 시트를 딕셔너리로 받은 뒤, 원하는 시트를 키로 꺼낸다</span>
+sheets = pd.read_excel(<span class="st">'source/read_excel_sample.xlsx'</span>, sheet_name=<span class="kw">None</span>)
+sheet_data = sheets[<span class="st">'Sheet1'</span>]</code></pre>
+
+      <div class="note w">
+        <span class="tag">준비물</span>
+        <p>
+          <code>.xlsx</code>를 읽고 쓰려면 <strong><code>openpyxl</code>이 따로 설치되어 있어야 합니다.</strong>
+          판다스만 있으면 <code>ImportError: Missing optional dependency 'openpyxl'</code>이 납니다.
+          설치 후에는 <b>커널을 재시작</b>해야 인식됩니다. <a href="#errors">오류 도감 ②</a> 참고.
+        </p>
+      </div>
+
+      <h3>JSON 읽기 — <code>orient</code>가 핵심</h3>
+
+      <p>
+        JSON은 자바스크립트에서 유래한 데이터 공유용 형식으로, 파이썬 딕셔너리처럼 <code>key: value</code> 구조입니다.
+        문제는 <strong>같은 표를 JSON으로 적는 방법이 여러 가지</strong>라는 점입니다.
+        그래서 판다스에게 "이 JSON은 어떤 방식으로 적혀 있다"고 알려주는 옵션이 <code>orient</code>입니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 4 — 같은 JSON, orient만 다르게</span>
+        <div class="fig-body">
+          <div class="dpair">
+            <div class="dcol">
+              <span class="cap">source/emp2.json</span>
+              <pre style="margin:0; border-left-width:1px;"><code>{
+  "이름": {"0":"김철수","1":"이영희"},
+  "부서": {"0":"영업부","1":"개발부"},
+  "월급": {"0":350,   "1":480}
+}</code></pre>
+              <span class="sub">가장 바깥 키가 <b>이름·부서·월급</b><br>= 열 이름</span>
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="dcol">
+              <span class="cap">orient='columns' ✓ 구조와 일치</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th class="tx">이름</th><th class="tx">부서</th><th>월급</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td class="tx">김철수</td><td class="tx">영업부</td><td>350</td></tr>
+                  <tr><th class="ix">1</th><td class="tx">이영희</td><td class="tx">개발부</td><td>480</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">바깥 키를 <b>열</b>로 해석 → 의도대로</span>
+            </div>
+
+            <div class="dcol">
+              <span class="cap">orient='index' ✗ 구조와 불일치</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>0</th><th>1</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix tx">이름</th><td class="tx">김철수</td><td class="tx">이영희</td></tr>
+                  <tr><th class="ix tx">부서</th><td class="tx">영업부</td><td class="tx">개발부</td></tr>
+                  <tr><th class="ix tx">월급</th><td>350</td><td>480</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">바깥 키를 <b>행</b>으로 해석 → <b>표가 눕는다</b></span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          <b>바깥쪽 키가 무엇인지</b>가 판단 기준입니다. 열 이름이면 <code>'columns'</code>, 행 이름이면 <code>'index'</code>.
+          잘못 지정해도 <b>오류 없이 표가 뒤집힌 채 읽히므로</b> 반드시 결과를 눈으로 확인해야 합니다.
+        </p>
+      </div>
+
+      <p>
+        레코드를 리스트로 나열한 형태(<code>[{...}, {...}]</code>)는
+        <code>orient</code> 없이 <code>pd.read_json('emp.json')</code>만으로 잘 읽힙니다.
+        웹 API에서 가장 흔한 구조입니다.
+      </p>
+    </section>
+
+    <!-- ============ 03 저장 ============ -->
+    <section id="save">
+      <div class="sec-head"><span class="sec-num">03</span><h2>파일 저장 — to_csv · to_excel · to_json</h2></div>
+
+      <p>
+        읽기의 대칭입니다. 데이터프레임에 <code>.to_○○()</code>를 붙입니다.
+        형식마다 신경 써야 할 옵션이 하나씩 있습니다.
+      </p>
+
+      <pre><code>df = pd.DataFrame({<span class="st">'이름'</span>: [<span class="st">'김철수'</span>, <span class="st">'이영희'</span>],
+                   <span class="st">'부서'</span>: [<span class="st">'영업부'</span>, <span class="st">'개발부'</span>],
+                   <span class="st">'월급'</span>: [350, 480]})
+
+<span class="cm"># CSV — 가볍고 범용</span>
+df.to_csv(<span class="st">'source/result.csv'</span>, index=<span class="kw">False</span>, encoding=<span class="st">'utf-8-sig'</span>)
+
+<span class="cm"># Excel — 시트 이름 지정 가능 (openpyxl 필요)</span>
+df.to_excel(<span class="st">'source/result.xlsx'</span>, sheet_name=<span class="st">'직원목록'</span>, index=<span class="kw">False</span>)
+
+<span class="cm"># JSON — 시스템 간 데이터 전달용</span>
+df.to_json(<span class="st">'source/result.json'</span>, orient=<span class="st">'records'</span>, force_ascii=<span class="kw">False</span>, indent=4)</code></pre>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:26%">옵션</th><th>왜 필요한가</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>index=False</code></td>
+              <td><b>거의 항상 권장.</b> 안 주면 <code>0,1,2…</code> 행 번호가 이름 없는 열로 파일에 저장되고,
+                  그 파일을 다시 읽으면 <code>Unnamed: 0</code> 열이 생겨 지저분해집니다</td>
+            </tr>
+            <tr>
+              <td><code>encoding='utf-8-sig'</code></td>
+              <td>CSV 저장 시 <b>엑셀에서 한글이 깨지지 않게</b> 해줍니다. 일반 <code>utf-8</code>로 저장하면
+                  엑셀이 한글을 깨뜨려 보여주는 일이 흔합니다</td>
+            </tr>
+            <tr>
+              <td><code>sheet_name='직원목록'</code></td>
+              <td>엑셀 워크시트 이름. 기본값은 <code>'Sheet1'</code></td>
+            </tr>
+            <tr>
+              <td><code>na_rep='N/A'</code></td>
+              <td>결측치(NaN)를 어떤 문자로 표시할지</td>
+            </tr>
+            <tr>
+              <td><code>force_ascii=False</code></td>
+              <td>JSON 저장 시 <b>필수.</b> 기본값 <code>True</code>면 한글이 <code>가</code> 같은 유니코드 이스케이프로 저장됩니다</td>
+            </tr>
+            <tr>
+              <td><code>indent=4</code></td>
+              <td>JSON을 사람이 읽기 좋게 줄바꿈·들여쓰기</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4><code>to_json</code>의 <code>orient</code></h4>
+
+      <ul>
+        <li><code>'records'</code> — <code>[{"이름":"김철수", …}, …]</code> · <b>웹 API에서 가장 표준적인 형태</b></li>
+        <li><code>'columns'</code> — <code>{"이름":{"0":"김철수"}, …}</code> · 기본값</li>
+      </ul>
+
+      <div class="note t">
+        <span class="tag">팁</span>
+        <p>
+          한 파일에 여러 시트를 저장해야 하면 <code>pd.ExcelWriter()</code>를 함께 씁니다.
+        </p>
+        <pre style="margin:10px 0 0;"><code><span class="kw">with</span> pd.ExcelWriter(<span class="st">'source/out.xlsx'</span>) <span class="kw">as</span> writer:
+    df1.to_excel(writer, sheet_name=<span class="st">'Sheet1'</span>, index=<span class="kw">False</span>)
+    df2.to_excel(writer, sheet_name=<span class="st">'Sheet2'</span>, index=<span class="kw">False</span>)</code></pre>
+      </div>
+    </section>
+
+    <!-- ============ 04 확인 ============ -->
+    <section id="look">
+      <div class="sec-head"><span class="sec-num">04</span><h2>데이터 확인 — 구조를 먼저 파악하기</h2></div>
+
+      <p>
+        데이터를 읽은 직후 <strong>반드시 거쳐야 하는 단계</strong>입니다.
+        244행짜리 tips 데이터를 전부 출력해봐야 아무것도 알 수 없습니다.
+        일부만 보고, 요약을 보는 것이 순서입니다.
+      </p>
+
+      <h3>일부만 훑어보기 — head · tail · sample</h3>
+
+      <div class="fig">
+        <span class="fig-lab">그림 5 — 244행 중 어디를 보는가</span>
+        <div class="fig-body">
+          <div class="dpair">
+            <div class="dcol">
+              <span class="cap">df.head(3)</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>total_bill</th><th>tip</th><th class="tx">day</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td class="pick">16.99</td><td class="pick">1.01</td><td class="tx pick">Sun</td></tr>
+                  <tr><th class="ix">1</th><td class="pick">10.34</td><td class="pick">1.66</td><td class="tx pick">Sun</td></tr>
+                  <tr><th class="ix">2</th><td class="pick">21.01</td><td class="pick">3.50</td><td class="tx pick">Sun</td></tr>
+                  <tr class="out"><th class="ix">⋮</th><td>⋮</td><td>⋮</td><td class="tx">⋮</td></tr>
+                  <tr class="out"><th class="ix">243</th><td>18.78</td><td>3.00</td><td class="tx">Thur</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">위에서부터 — <b>열 이름이 제대로 들어갔나</b> 확인</span>
+            </div>
+
+            <div class="dcol">
+              <span class="cap">df.tail(2)</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>total_bill</th><th>tip</th><th class="tx">day</th></tr></thead>
+                <tbody>
+                  <tr class="out"><th class="ix">0</th><td>16.99</td><td>1.01</td><td class="tx">Sun</td></tr>
+                  <tr class="out"><th class="ix">⋮</th><td>⋮</td><td>⋮</td><td class="tx">⋮</td></tr>
+                  <tr><th class="ix">242</th><td class="pick">17.82</td><td class="pick">1.75</td><td class="tx pick">Sat</td></tr>
+                  <tr><th class="ix">243</th><td class="pick">18.78</td><td class="pick">3.00</td><td class="tx pick">Thur</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">아래에서부터 — <b>끝까지 잘 읽혔나</b>, 합계 행이 섞이지 않았나</span>
+            </div>
+
+            <div class="dcol">
+              <span class="cap">df.sample(3)</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>total_bill</th><th>tip</th><th class="tx">day</th></tr></thead>
+                <tbody>
+                  <tr class="out"><th class="ix">0</th><td>16.99</td><td>1.01</td><td class="tx">Sun</td></tr>
+                  <tr><th class="ix">19</th><td class="pick2">20.65</td><td class="pick2">3.35</td><td class="tx pick2">Sat</td></tr>
+                  <tr class="out"><th class="ix">⋮</th><td>⋮</td><td>⋮</td><td class="tx">⋮</td></tr>
+                  <tr><th class="ix">128</th><td class="pick2">11.38</td><td class="pick2">2.00</td><td class="tx pick2">Thur</td></tr>
+                  <tr><th class="ix">173</th><td class="pick2">31.85</td><td class="pick2">3.18</td><td class="tx pick2">Sun</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">무작위 — <b>정렬된 데이터의 전체 경향</b>을 편향 없이</span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          <b>기본값이 다릅니다.</b> <code>head()</code>·<code>tail()</code>은 <b>5개</b>,
+          <code>sample()</code>은 <b>1개</b>입니다. 이 차이를 놓치기 쉽습니다.
+          <code>sample()</code>의 인덱스는 원래 위치를 그대로 유지하므로 순서가 뒤섞여 보입니다.
+        </p>
+      </div>
+
+      <pre><code>df.head()                    <span class="cm"># 위 5개 (기본값 n=5)</span>
+df.head(3)                   <span class="cm"># 위 3개</span>
+df.tail()                    <span class="cm"># 아래 5개</span>
+df.sample()                  <span class="cm"># 무작위 1개 ← 기본값 n=1 주의!</span>
+df.sample(3)                 <span class="cm"># 무작위 3개</span>
+df.sample(frac=0.2)          <span class="cm"># 전체의 20%를 무작위로</span>
+df.sample(3, random_state=42) <span class="cm"># 매번 같은 결과 (재현 가능)</span></code></pre>
+
+      <div class="note t">
+        <span class="tag">random_state</span>
+        <p>
+          <code>sample()</code>은 실행할 때마다 결과가 달라집니다.
+          수업 자료나 보고서처럼 <b>같은 결과를 반복해서 얻어야 할 때</b>는
+          <code>random_state=42</code>처럼 숫자를 고정하세요. 숫자 값 자체는 아무 의미 없고, 같기만 하면 됩니다.
+        </p>
+      </div>
+
+      <h3>속성과 메서드 — 괄호가 있냐 없냐</h3>
+
+      <p>
+        이 구분이 판다스 초반에 가장 많이 헷갈리는 부분입니다.
+        <strong>속성(Attribute)은 객체가 이미 가지고 있는 정보</strong>라서 괄호가 없고,
+        <strong>메서드(Method)는 계산을 시켜서 결과를 받는 동작</strong>이라서 괄호가 붙습니다.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:22%">구분</th><th style="width:26%">쓰는 법</th><th>무엇을 알려주는가</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="4"><b>속성</b><br><span style="color:var(--faint);font-size:12.5px">괄호 없음</span></td>
+              <td><code>df.shape</code></td><td>(행 개수, 열 개수) → tips는 <code>(244, 7)</code></td>
+            </tr>
+            <tr><td><code>df.columns</code></td><td>열 이름 목록</td></tr>
+            <tr><td><code>df.index</code></td><td>행 인덱스 정보</td></tr>
+            <tr><td><code>df.values</code></td><td>값만 담긴 NumPy 배열</td></tr>
+            <tr>
+              <td rowspan="2"><b>메서드</b><br><span style="color:var(--faint);font-size:12.5px">괄호 있음</span></td>
+              <td><code>df.info()</code></td>
+              <td>행 수 · 열별 dtype · <b>결측치(non-null) 개수</b> · 메모리 사용량</td>
+            </tr>
+            <tr>
+              <td><code>df.describe()</code></td>
+              <td><b>숫자 열만</b> 개수 · 평균 · 표준편차 · 최소/최대 · 사분위수</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note w">
+        <span class="tag">헷갈릴 때</span>
+        <p>
+          <code>df.shape()</code>라고 쓰면 <code>TypeError: 'tuple' object is not callable</code>,
+          거꾸로 <code>df.info</code>라고 쓰면 실행되지 않고 함수 자체의 정보만 출력됩니다.
+          <b>"이미 알고 있는 사실인가(속성), 계산해서 알려주는 것인가(메서드)"</b>로 판단하세요.
+          행·열 개수는 이미 알고 있는 사실이고, 평균은 계산해야 하는 값입니다.
+        </p>
+      </div>
+
+      <pre><code><span class="cm"># 1. 크기와 이름 확인 (속성)</span>
+print(df.shape)     <span class="cm"># 몇 행 몇 열?</span>
+print(df.columns)   <span class="cm"># 무슨 컬럼들이 있지?</span>
+print(df.index)     <span class="cm"># 인덱스는 어떻게 되어있지?</span>
+
+<span class="cm"># 2. 요약 및 통계 확인 (메서드)</span>
+df.info()           <span class="cm"># 결측치나 데이터 타입은 괜찮나?</span>
+df.describe()       <span class="cm"># 평균/최댓값/최솟값은 얼마지?</span></code></pre>
+    </section>
+
+    <!-- ============ 05 선택 ============ -->
+    <section id="pick">
+      <div class="sec-head"><span class="sec-num">05</span><h2>데이터 선택 — loc과 iloc</h2></div>
+
+      <p>
+        앞에서 인덱스에 <a href="#ds">두 종류</a>가 있다고 했습니다. 선택 도구도 그에 맞춰 두 개입니다.
+      </p>
+
+      <ul>
+        <li><code>loc[행_이름, 열_이름]</code> — <strong>이름(라벨) 기반.</strong> 조건식도 여기에 넣을 수 있습니다.</li>
+        <li><code>iloc[행_위치, 열_위치]</code> — <strong>위치(정수) 기반.</strong> 이름과 무관하게 몇 번째인지로 찾습니다.</li>
+      </ul>
+
+      <h3>결정적 차이 — 슬라이싱의 끝값</h3>
+
+      <p>
+        문법이 비슷해서 섞어 쓰기 쉬운데, <strong>슬라이싱 동작이 다릅니다.</strong>
+        이것만 확실히 기억하면 대부분의 혼란이 사라집니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 6 — 같은 <code>0:2</code>, 다른 결과</span>
+        <div class="fig-body">
+          <div class="dpair">
+            <div class="dcol">
+              <span class="cap">df_emp.loc[0:2] → 3행</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th class="tx">이름</th><th class="tx">부서</th><th>나이</th><th>월급(만원)</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td class="tx pick">김서준</td><td class="tx pick">영업부</td><td class="pick">28</td><td class="pick">320</td></tr>
+                  <tr><th class="ix">1</th><td class="tx pick">이하윤</td><td class="tx pick">개발부</td><td class="pick">35</td><td class="pick">450</td></tr>
+                  <tr><th class="ix">2</th><td class="tx pick">박도윤</td><td class="tx pick">개발부</td><td class="pick">41</td><td class="pick">520</td></tr>
+                  <tr class="out"><th class="ix">3</th><td class="tx">최지우</td><td class="tx">인사부</td><td>26</td><td>280</td></tr>
+                  <tr class="out"><th class="ix">4</th><td class="tx">정예린</td><td class="tx">영업부</td><td>33</td><td>410</td></tr>
+                </tbody>
+              </table>
+              <span class="sub"><b>끝값 2를 포함</b>한다 — 이름으로 "0번부터 2번까지"</span>
+            </div>
+
+            <div class="dcol">
+              <span class="cap">df_emp.iloc[0:2] → 2행</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th class="tx">이름</th><th class="tx">부서</th><th>나이</th><th>월급(만원)</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td class="tx pick">김서준</td><td class="tx pick">영업부</td><td class="pick">28</td><td class="pick">320</td></tr>
+                  <tr><th class="ix">1</th><td class="tx pick">이하윤</td><td class="tx pick">개발부</td><td class="pick">35</td><td class="pick">450</td></tr>
+                  <tr class="out"><th class="ix">2</th><td class="tx">박도윤</td><td class="tx">개발부</td><td>41</td><td>520</td></tr>
+                  <tr class="out"><th class="ix">3</th><td class="tx">최지우</td><td class="tx">인사부</td><td>26</td><td>280</td></tr>
+                  <tr class="out"><th class="ix">4</th><td class="tx">정예린</td><td class="tx">영업부</td><td>33</td><td>410</td></tr>
+                </tbody>
+              </table>
+              <span class="sub"><b>끝값 2를 제외</b>한다 — 파이썬 리스트 슬라이싱과 동일</span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          <b>왜 다른가:</b> <code>loc</code>은 <b>이름</b>을 다룹니다. "0번 행부터 2번 행까지"라고 말할 때 2번 행을 빼는 건 자연스럽지 않죠.
+          반면 <code>iloc</code>은 <b>위치</b>를 다루므로 파이썬의 <code>list[0:2]</code>와 똑같이 동작합니다.
+          이 예시에서는 인덱스 이름이 마침 <code>0,1,2…</code> 숫자라서 겉보기 문법이 같아 더 헷갈립니다.
+        </p>
+      </div>
+
+      <h3>사용법 정리</h3>
+
+      <pre><code><span class="cm">#### loc — 이름 기반 ####</span>
+df_emp.loc[0]                          <span class="cm"># 인덱스 이름이 0인 행 → Series</span>
+df_emp.loc[[0, 2]]                     <span class="cm"># 0번, 2번 행 → DataFrame</span>
+df_emp.loc[0:2]                        <span class="cm"># 0~2번 행 (끝 포함! 3행)</span>
+df_emp.loc[0:2, [<span class="st">'이름'</span>, <span class="st">'부서'</span>]]        <span class="cm"># 행과 열을 동시에</span>
+df_emp.loc[df_emp[<span class="st">'월급(만원)'</span>] >= 400,
+           [<span class="st">'이름'</span>, <span class="st">'월급(만원)'</span>]]        <span class="cm"># 조건식 + 열 선택 ← loc만 가능</span>
+
+<span class="cm">#### iloc — 위치 기반 ####</span>
+df_emp.iloc[0]                         <span class="cm"># 첫 번째 행</span>
+df_emp.iloc[[0, 2]]                    <span class="cm"># 0번째, 2번째 위치 행</span>
+df_emp.iloc[0:2]                       <span class="cm"># 0~1번째 (끝 제외! 2행)</span>
+df_emp.iloc[0:2, 0:2]                  <span class="cm"># 0~1번째 행, 0~1번째 열</span></code></pre>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:26%">비교 항목</th><th><code>loc</code></th><th><code>iloc</code></th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>기준</b></td><td>인덱스 이름 · 열 이름</td><td>정수 위치(0부터)</td></tr>
+            <tr><td><b>슬라이싱 끝값</b></td><td><b>포함</b> — <code>0:2</code>는 3개</td><td><b>제외</b> — <code>0:2</code>는 2개</td></tr>
+            <tr><td><b>열 지정</b></td><td>이름 <code>['이름','부서']</code></td><td>위치 <code>0:2</code></td></tr>
+            <tr><td><b>조건식(Boolean)</b></td><td><b>가능</b></td><td>불가</td></tr>
+            <tr><td><b>인덱스가 문자열일 때</b></td><td><code>df.loc['철수']</code></td><td><code>df.iloc[0]</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note e">
+        <span class="tag">실제로 겪은 오류</span>
+        <p>
+          인덱스가 <code>['학생1','학생2']</code>처럼 문자열인데 <code>df.loc[0:2]</code>를 쓰면
+          <code>TypeError: cannot do slice indexing</code>이 납니다. 이름이 문자열인 곳에 숫자 이름을 찾으라고 한 셈이니까요.
+          위치로 자르려면 <code>iloc</code>을 쓰세요.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 06 조건 검색 ============ -->
+    <section id="filter">
+      <div class="sec-head"><span class="sec-num">06</span><h2>조건 검색 — 원하는 행만 골라내기</h2></div>
+
+      <p>
+        판다스 조건 검색의 원리는 딱 하나입니다.
+        <strong>조건식은 True/False가 담긴 Series(불리언 마스크)를 만들고,
+        그 마스크를 <code>df[...]</code>에 넣으면 True인 행만 남습니다.</strong>
+        이 2단계 구조를 이해하면 나머지는 문법 차이일 뿐입니다.
+      </p>
+
+      <div class="fig">
+        <span class="fig-lab">그림 7 — 조건 검색이 작동하는 원리</span>
+        <div class="fig-body">
+          <div class="dpair">
+            <div class="dcol">
+              <span class="cap">① df['total_bill'] &gt; 30.0</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>total_bill</th><th>mask</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">0</th><td>16.99</td><td class="mask-f">False</td></tr>
+                  <tr><th class="ix">1</th><td>10.34</td><td class="mask-f">False</td></tr>
+                  <tr><th class="ix">11</th><td>35.26</td><td class="mask-t">True</td></tr>
+                  <tr><th class="ix">23</th><td>39.42</td><td class="mask-t">True</td></tr>
+                  <tr><th class="ix">39</th><td>31.27</td><td class="mask-t">True</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">조건식의 결과는 <b>표가 아니라<br>True/False Series</b></span>
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="dcol">
+              <span class="cap">② df[mask]</span>
+              <table class="dt">
+                <thead><tr><th class="corner"></th><th>total_bill</th><th>tip</th><th class="tx">day</th></tr></thead>
+                <tbody>
+                  <tr><th class="ix">11</th><td class="pick">35.26</td><td class="pick">5.00</td><td class="tx pick">Sun</td></tr>
+                  <tr><th class="ix">23</th><td class="pick">39.42</td><td class="pick">7.58</td><td class="tx pick">Sat</td></tr>
+                  <tr><th class="ix">39</th><td class="pick">31.27</td><td class="pick">5.00</td><td class="tx pick">Sat</td></tr>
+                </tbody>
+              </table>
+              <span class="sub">True인 행만 남는다 — 244행 중 <b>32행</b><br>인덱스는 원래 번호를 유지</span>
+            </div>
+          </div>
+        </div>
+        <p class="fig-cap">
+          결과의 인덱스가 <code>0,1,2…</code>가 아니라 <code>11, 23, 39…</code>인 점을 보세요.
+          <b>필터링은 인덱스를 다시 매기지 않습니다.</b> 원래 몇 번째 데이터였는지가 그대로 보존됩니다.
+        </p>
+      </div>
+
+      <h3>방법 다섯 가지</h3>
+
+      <h4>① 비교 연산자 — <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code> <code>==</code> <code>!=</code></h4>
+
+      <pre><code>res1 = df[df[<span class="st">'total_bill'</span>] > 30.0]      <span class="cm"># 총액 30 초과 → 32행</span>
+res2 = df[df[<span class="st">'day'</span>] == <span class="st">'Sun'</span>]           <span class="cm"># 일요일만    → 76행</span>
+
+print(res1[[<span class="st">'total_bill'</span>, <span class="st">'day'</span>]])         <span class="cm"># 결과에서 특정 열만 출력</span></code></pre>
+
+      <h4>② 논리 연산자 — <code>&amp;</code> <code>|</code> <code>~</code></h4>
+
+      <pre><code><span class="cm"># AND(&) — 두 조건 모두 참</span>
+cond_and = (df[<span class="st">'total_bill'</span>] >= 30.0) & (df[<span class="st">'day'</span>] == <span class="st">'Sun'</span>)
+res_and = df[cond_and]
+
+<span class="cm"># OR(|) — 둘 중 하나라도 참</span>
+cond_or = (df[<span class="st">'total_bill'</span>] >= 40.0) | (df[<span class="st">'total_bill'</span>] <= 10.0)
+res_or = df[cond_or]
+
+<span class="cm"># NOT(~) — 조건의 반대</span>
+res_not = df[~(df[<span class="st">'day'</span>] == <span class="st">'Thur'</span>)]</code></pre>
+
+      <div class="note w">
+        <span class="tag">두 가지 필수 규칙</span>
+        <ol style="margin-bottom:0">
+          <li>
+            파이썬 키워드 <code>and</code> · <code>or</code> · <code>not</code>이 아니라
+            <strong>비트 연산자 <code>&amp;</code> · <code>|</code> · <code>~</code></strong>를 씁니다.
+            <code>and</code>를 쓰면 <code>ValueError: The truth value of a Series is ambiguous</code>가 납니다.
+            Series 전체를 하나의 참/거짓으로 판단할 수 없기 때문입니다.
+          </li>
+          <li>
+            <strong>각 조건을 반드시 괄호로 감쌉니다.</strong>
+            <code>&amp;</code>가 <code>&gt;=</code>보다 연산 우선순위가 높아서, 괄호가 없으면
+            엉뚱한 순서로 계산됩니다.
+          </li>
+        </ol>
+      </div>
+
+      <h4>③ <code>isin()</code> — 목록에 포함되는지</h4>
+
+      <p>여러 값에 대한 OR 조건을 짧게 씁니다. <code>day == 'Sun' | day == 'Sat'</code>를 대신합니다.</p>
+
+      <pre><code>target_days = [<span class="st">'Sun'</span>, <span class="st">'Sat'</span>]
+res_isin = df[df[<span class="st">'day'</span>].isin(target_days)]      <span class="cm"># 주말 데이터</span>
+res_not_in = df[~df[<span class="st">'day'</span>].isin(target_days)]   <span class="cm"># ~ 붙이면 평일 데이터</span></code></pre>
+
+      <h4>④ <code>between()</code> — 범위 안에 있는지</h4>
+
+      <pre><code><span class="cm"># 아래 두 줄은 완전히 같은 뜻</span>
+res_between = df[df[<span class="st">'tip'</span>].between(2.0, 3.0)]
+res_between = df[(df[<span class="st">'tip'</span>] >= 2.0) & (df[<span class="st">'tip'</span>] <= 3.0)]</code></pre>
+
+      <p>
+        기본값이 <code>inclusive='both'</code>라서 <strong>양 끝값을 포함</strong>합니다(이상~이하).
+        끝값을 빼려면 <code>inclusive='neither'</code>, 한쪽만 포함하려면 <code>'left'</code> / <code>'right'</code>를 씁니다.
+      </p>
+
+      <h4>⑤ <code>query()</code> — 문자열 조건식</h4>
+
+      <p>
+        SQL의 <code>WHERE</code>절처럼 조건을 문자열로 씁니다.
+        대괄호와 괄호가 사라져서 조건이 복잡할 때 훨씬 읽기 좋습니다.
+      </p>
+
+      <pre><code><span class="cm"># 기본 — 여기서는 and/or/not 을 그대로 쓴다 (&amp; 아님!)</span>
+res_query1 = df.query(<span class="st">'total_bill &gt; 30.0 and day == "Sun"'</span>)
+
+<span class="cm"># 파이썬 변수를 넣을 때는 @ 를 붙인다</span>
+min_tip = 5.0
+res_query2 = df.query(<span class="st">'tip &gt;= @min_tip'</span>)
+
+<span class="cm"># in 키워드도 쓸 수 있다</span>
+res_query3 = df.query(<span class="st">'day in ["Sun", "Sat"]'</span>)</code></pre>
+
+      <div class="note t">
+        <span class="tag">헷갈리지 않기</span>
+        <p>
+          <code>df[...]</code> 방식에서는 <code>&amp;</code> <code>|</code> <code>~</code>,
+          <code>query()</code> 안에서는 <code>and</code> <code>or</code> <code>not</code>.
+          <strong>정반대입니다.</strong> <code>query()</code>는 문자열을 자체 문법으로 해석하기 때문입니다.
+          문자열 안에서 문자열 값을 쓸 때는 <code>'... day == "Sun"'</code>처럼 따옴표를 다르게 겹쳐 씁니다.
+        </p>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:20%">방법</th><th>이럴 때 쓴다</th></tr></thead>
+          <tbody>
+            <tr><td><code>&gt;</code> <code>==</code></td><td>조건 한 개</td></tr>
+            <tr><td><code>&amp;</code> <code>|</code> <code>~</code></td><td>조건 두세 개 조합</td></tr>
+            <tr><td><code>isin()</code></td><td>한 열이 여러 값 중 하나일 때</td></tr>
+            <tr><td><code>between()</code></td><td>숫자·날짜의 범위</td></tr>
+            <tr><td><code>query()</code></td><td>조건이 많아 괄호가 지저분해질 때</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 07 정렬 ============ -->
+    <section id="sort">
+      <div class="sec-head"><span class="sec-num">07</span><h2>정렬 — sort_values와 sort_index</h2></div>
+
+      <p>
+        정렬 메서드는 두 개이고, <strong>무엇을 기준으로 삼는지</strong>가 다릅니다.
+      </p>
+
+      <ul>
+        <li><code>sort_values()</code> — <strong>값</strong>을 기준으로 (총액 순, 팁 순…)</li>
+        <li><code>sort_index()</code> — <strong>인덱스</strong>를 기준으로 (행 번호 순, 열 이름 순)</li>
+      </ul>
+
+      <h3><code>sort_values()</code></h3>
+
+      <pre><code>df.sort_values(by=<span class="st">"total_bill"</span>)                      <span class="cm"># 오름차순 (기본값)</span>
+df.sort_values(by=<span class="st">"total_bill"</span>, ascending=<span class="kw">False</span>)    <span class="cm"># 내림차순</span>
+
+<span class="cm"># 여러 열 기준 — 요일은 오름차순, 같은 요일 안에서는 총액 내림차순</span>
+df.sort_values(by=[<span class="st">"day"</span>, <span class="st">"total_bill"</span>],
+               ascending=[<span class="kw">True</span>, <span class="kw">False</span>])</code></pre>
+
+      <p>
+        여러 열로 정렬할 때는 <strong><code>by</code>의 순서가 우선순위</strong>입니다.
+        먼저 <code>day</code>로 묶고, 같은 요일끼리는 <code>total_bill</code>로 정렬합니다.
+        <code>ascending</code>에도 리스트를 주면 열마다 방향을 다르게 지정할 수 있습니다.
+      </p>
+
+      <h4><code>inplace</code> — 원본을 바꿀 것인가</h4>
+
+      <pre><code>df.sort_values(by=<span class="st">"tip"</span>)                  <span class="cm"># 정렬된 새 결과를 반환, 원본 df는 그대로</span>
+
+df2 = df.copy()
+df2.sort_values(by=<span class="st">"tip"</span>, inplace=<span class="kw">True</span>)   <span class="cm"># df2 자체를 정렬해버린다</span></code></pre>
+
+      <div class="note w">
+        <span class="tag">주의</span>
+        <p>
+          <code>df.sort_values(by="tip")</code>만 실행하면 <b>원본은 하나도 바뀌지 않습니다.</b>
+          결과를 남기려면 <code>df_sorted = df.sort_values(by="tip")</code>처럼 변수에 받거나
+          <code>inplace=True</code>를 쓰세요. 원본을 보존하고 싶다면
+          위 예시처럼 <code>df.copy()</code>로 복사한 뒤 작업하는 습관이 안전합니다.
+        </p>
+      </div>
+
+      <h3><code>sort_index()</code></h3>
+
+      <p>
+        <a href="#filter">조건 검색</a>이나 <code>sample()</code>을 거치면 인덱스 순서가 흐트러집니다.
+        이때 <code>sort_index()</code>로 원래 순서를 되찾습니다.
+      </p>
+
+      <pre><code>sample = df.sample(10, random_state=42)   <span class="cm"># 인덱스가 뒤섞인 상태</span>
+
+sample.sort_index()                      <span class="cm"># 인덱스 오름차순 → 원래 순서 복원</span>
+sample.sort_index(ascending=<span class="kw">False</span>)       <span class="cm"># 인덱스 내림차순</span>
+
+df.sort_index(axis=1)                    <span class="cm"># 열 이름을 알파벳순으로 정렬</span></code></pre>
+
+      <div class="note t">
+        <span class="tag">axis의 의미</span>
+        <p>
+          <code>axis=0</code>(기본값)은 <strong>행 방향</strong>, <code>axis=1</code>은 <strong>열 방향</strong>입니다.
+          <code>sort_index(axis=1)</code>은 행을 건드리지 않고 <b>열의 좌우 순서</b>만 이름 순으로 바꿉니다.
+          tips 데이터라면 <code>day, sex, size, smoker, time, tip, total_bill</code> 순이 됩니다.
+          <code>axis</code>는 판다스 전체에서 같은 의미로 쓰이니 지금 익혀두면 계속 도움이 됩니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 08 오류 도감 ============ -->
+    <section id="errors">
+      <div class="sec-head"><span class="sec-num">08</span><h2>오류 도감 — 실제로 만난 네 가지</h2></div>
+
+      <p>
+        이번 노트북을 진행하면서 실제로 마주친 오류들입니다.
+        <strong>메시지를 읽는 법</strong>만 익히면 대부분 스스로 해결할 수 있습니다.
+        판다스 오류는 마지막 줄이 가장 중요합니다.
+      </p>
+
+      <div class="errlist">
+        <div class="erow">
+          <span class="en">FileNotFoundError: [Errno 2] No such file or directory: 'data.xlsx'</span>
+          <dl>
+            <dt>뜻</dt><dd>그 경로에 파일이 없다.</dd>
+            <dt>원인</dt><dd>파일이 실제로 없거나, 경로가 틀렸다. 상대경로는 <b>노트북이 실행되는 위치</b> 기준이다.</dd>
+            <dt>해결</dt><dd><code>os.listdir('.')</code>·<code>os.listdir('./source')</code>로 파일이 어디 있는지 먼저 확인하고 경로를 맞춘다.</dd>
+          </dl>
+        </div>
+
+        <div class="erow">
+          <span class="en">ImportError: Missing optional dependency 'openpyxl'</span>
+          <dl>
+            <dt>뜻</dt><dd>엑셀을 다루는 데 필요한 보조 패키지가 없다.</dd>
+            <dt>원인</dt><dd>판다스는 <code>.xlsx</code> 처리를 외부 엔진에 맡긴다. 판다스만 설치해서는 엑셀을 읽고 쓸 수 없다.</dd>
+            <dt>해결</dt><dd><code>openpyxl</code>을 설치하고 <b>커널을 재시작</b>한다. 재시작하지 않으면 설치해도 계속 같은 오류가 난다.</dd>
+          </dl>
+        </div>
+
+        <div class="erow">
+          <span class="en">KeyError: "None of [Index(['이름', '부서'])] are in the [columns]"</span>
+          <dl>
+            <dt>뜻</dt><dd>찾는 열 이름이 <b>하나도</b> 없다.</dd>
+            <dt>원인</dt><dd>대개 <code>df</code>가 내가 생각한 그 데이터가 아니다. 앞 셀에서 <code>df</code>를 다른 데이터로 덮어썼을 때 자주 발생한다.</dd>
+            <dt>해결</dt><dd><code>print(df.columns)</code>로 현재 <code>df</code>의 정체를 먼저 확인한다.
+              메시지가 <code>['부서'] not in index</code>처럼 <b>일부만</b> 지목하면 단순 오타, <code>None of [...]</code>면 데이터프레임 자체가 다른 것이다.</dd>
+          </dl>
+        </div>
+
+        <div class="erow">
+          <span class="en">ValueError: Cannot take a larger sample than population when 'replace=False'</span>
+          <dl>
+            <dt>뜻</dt><dd>가진 행보다 많이 뽑으려 했다.</dd>
+            <dt>원인</dt><dd>5행짜리 데이터에 <code>df.sample(10)</code>을 실행. 위 <code>KeyError</code>와 뿌리가 같다 — <code>df</code>가 바뀌어 있었다.</dd>
+            <dt>해결</dt><dd><code>df.shape</code>로 행 수를 확인한다. 중복을 허용해서라도 뽑아야 한다면 <code>replace=True</code>를 준다.</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="note e" style="margin-top:22px">
+        <span class="tag">근본 원인은 하나였다</span>
+        <p>
+          위 네 개 중 뒤의 두 개, 그리고 노트북에서 한 번에 터진 오류 일곱 개가
+          모두 <strong><code>df</code>라는 변수 이름을 여러 실습에서 재사용한 탓</strong>이었습니다.
+          <code>loc</code> 실습에서 <code>df</code>를 사원 데이터(5행)로 덮어쓰자,
+          그 뒤에서 tips 데이터(244행)를 기대하던 셀들이 줄줄이 깨졌습니다.
+        </p>
+        <p style="margin-bottom:0">
+          <b>예방법:</b> 실습 데이터마다 이름을 다르게 두세요 —
+          <code>df_tips</code>, <code>df_emp</code>처럼요.
+          노트북은 위에서 아래로 다시 실행되기 때문에, <code>df</code> 하나를 계속 돌려쓰면
+          어느 셀이 어떤 데이터를 보고 있는지 추적하기 어려워집니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 09 치트시트 ============ -->
+    <section id="cheat">
+      <div class="sec-head"><span class="sec-num">09</span><h2>치트시트</h2></div>
+
+      <div class="cheat">
+        <div class="cbox">
+          <h4>읽기</h4>
+          <ul>
+            <li><code>pd.read_csv(경로)</code></li>
+            <li><code>pd.read_excel(경로, sheet_name='Sheet1')</code></li>
+            <li><code>pd.read_json(경로, orient='columns')</code></li>
+            <li>헤더 없음 → <code>header=None</code></li>
+            <li>한글 깨짐 → <code>encoding='cp949'</code></li>
+            <li>탭 구분 → <code>sep='\t'</code></li>
+          </ul>
+        </div>
+
+        <div class="cbox">
+          <h4>저장</h4>
+          <ul>
+            <li><code>df.to_csv(경로, index=False, encoding='utf-8-sig')</code></li>
+            <li><code>df.to_excel(경로, sheet_name='이름', index=False)</code></li>
+            <li><code>df.to_json(경로, orient='records', force_ascii=False)</code></li>
+            <li>거의 항상 <code>index=False</code></li>
+          </ul>
+        </div>
+
+        <div class="cbox">
+          <h4>확인</h4>
+          <ul>
+            <li><code>df.head()</code> <code>df.tail()</code> — 기본 5개</li>
+            <li><code>df.sample()</code> — 기본 <b>1개</b></li>
+            <li><code>df.shape</code> <code>df.columns</code> <code>df.index</code> — 괄호 없음</li>
+            <li><code>df.info()</code> <code>df.describe()</code> — 괄호 있음</li>
+          </ul>
+        </div>
+
+        <div class="cbox">
+          <h4>선택</h4>
+          <ul>
+            <li><code>df['열']</code> — 열 하나 → Series</li>
+            <li><code>df[['열1','열2']]</code> — 열 여러 개 → DataFrame</li>
+            <li><code>df.loc[행이름, 열이름]</code> — 끝값 <b>포함</b></li>
+            <li><code>df.iloc[행위치, 열위치]</code> — 끝값 <b>제외</b></li>
+          </ul>
+        </div>
+
+        <div class="cbox">
+          <h4>조건 검색</h4>
+          <ul>
+            <li><code>df[df['열'] &gt; 30]</code></li>
+            <li><code>df[(조건A) &amp; (조건B)]</code> — 괄호 필수</li>
+            <li><code>df[df['열'].isin([...])]</code></li>
+            <li><code>df[df['열'].between(2, 3)]</code></li>
+            <li><code>df.query('열 &gt; 30 and 열2 == "값"')</code></li>
+            <li><code>and</code>/<code>or</code>는 <b><code>query()</code> 안에서만</b></li>
+          </ul>
+        </div>
+
+        <div class="cbox">
+          <h4>정렬</h4>
+          <ul>
+            <li><code>df.sort_values(by='열')</code></li>
+            <li><code>df.sort_values(by='열', ascending=False)</code></li>
+            <li><code>df.sort_values(by=['A','B'], ascending=[True,False])</code></li>
+            <li><code>df.sort_index()</code> — 인덱스 순 복원</li>
+            <li><code>df.sort_index(axis=1)</code> — 열 이름 순</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>막혔을 때 순서대로 해볼 것</h3>
+
+      <ol>
+        <li><code>print(df.shape)</code> — 몇 행 몇 열인가. 내가 생각한 그 데이터인가?</li>
+        <li><code>print(df.columns)</code> — 열 이름이 정확히 무엇인가. 오타·공백은 없는가?</li>
+        <li><code>df.head()</code> — 값이 제대로 들어갔는가. 헤더가 데이터를 잡아먹지 않았는가?</li>
+        <li><code>df.info()</code> — dtype이 예상과 맞는가. 숫자가 문자열로 읽히지 않았는가?</li>
+        <li>오류 메시지의 <strong>마지막 줄</strong>을 읽는다. 판다스는 대부분 무엇이 문제인지 정확히 말해준다.</li>
+      </ol>
+    </section>
+
+    <footer class="foot">
+      <p>
+        <code>data08_pandas기본.ipynb</code> 정리 · 실습 데이터는 tips(244행 7열)와 사원 데이터(5행 4열).
+        필요 패키지는 <code>pandas</code>, <code>openpyxl</code>(엑셀), <code>seaborn</code>(tips 데이터셋).
+      </p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    if (!sections.length || !('IntersectionObserver' in window)) return;
+
+    var visible = {};
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+
+      var current = null;
+      for (var i = 0; i < sections.length; i++) {
+        if (visible[sections[i].id]) { current = sections[i].id; break; }
+      }
+      links.forEach(function (a) { a.classList.remove('on'); });
+      if (current && byId[current]) byId[current].classList.add('on');
+    }, { rootMargin: '-15% 0px -70% 0px' });
+
+    sections.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>
