@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0}
+  img,svg{max-width:100%}
+</style>
+<title>판다스 · 넘파이 연습 과제 5선</title>
+
+<style>
+  :root {
+    --navy:#14103c; --paper:#f6f6fa; --panel:#ffffff; --ink:#1c1935;
+    --muted:#5f5c7d; --faint:#8b88a6; --rule:#dcdae8; --rule-2:#ebe9f3;
+    --pink:#d1047c; --yellow:#ffca00; --hi:#fff4c9; --ok:#0f7a52;
+    --warn:#b3541e; --err:#c0263c; --code-bg:#f1f0f7;
+    --f-body:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"D2Coding",monospace;
+    --maxw:74ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --navy:#cdc8f0; --paper:#100e1b; --panel:#181528; --ink:#e9e7f4;
+      --muted:#a29ec2; --faint:#7e7aa0; --rule:#322e4c; --rule-2:#262239;
+      --pink:#ff5fae; --hi:#3b3410; --ok:#4bd39b; --warn:#e89b5c; --err:#ff7089;
+      --code-bg:#1e1b31; }
+  }
+  :root[data-theme="dark"] { --navy:#cdc8f0; --paper:#100e1b; --panel:#181528; --ink:#e9e7f4;
+    --muted:#a29ec2; --faint:#7e7aa0; --rule:#322e4c; --rule-2:#262239;
+    --pink:#ff5fae; --hi:#3b3410; --ok:#4bd39b; --warn:#e89b5c; --err:#ff7089; --code-bg:#1e1b31; }
+  :root[data-theme="light"] { --navy:#14103c; --paper:#f6f6fa; --panel:#ffffff; --ink:#1c1935;
+    --muted:#5f5c7d; --faint:#8b88a6; --rule:#dcdae8; --rule-2:#ebe9f3;
+    --pink:#d1047c; --hi:#fff4c9; --ok:#0f7a52; --warn:#b3541e; --err:#c0263c; --code-bg:#f1f0f7; }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font-family:var(--f-body); font-size:16px; line-height:1.75;
+         -webkit-font-smoothing:antialiased; }
+
+  .layout { display:grid; grid-template-columns:1fr; max-width:1180px; margin:0 auto; padding:0 20px 96px; }
+  @media (min-width:1000px) { .layout { grid-template-columns:200px minmax(0,1fr); gap:56px; padding:0 32px 120px; } }
+
+  .toc { display:none; }
+  @media (min-width:1000px) {
+    .toc { display:block; position:sticky; top:0; align-self:start; max-height:100vh;
+           overflow-y:auto; padding:40px 0; font-size:13px; line-height:1.5; }
+  }
+  .toc-h { font-family:var(--f-mono); font-size:10px; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--faint); margin:0 0 14px; }
+  .toc ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .toc a { display:flex; gap:9px; padding:5px 8px 5px 11px; color:var(--muted);
+           text-decoration:none; border-left:2px solid transparent; transition:color .15s,border-color .15s; }
+  .toc a:hover { color:var(--ink); }
+  .toc a .n { font-family:var(--f-mono); font-size:10px; color:var(--faint); padding-top:3px; }
+  .toc a.on { color:var(--ink); border-left-color:var(--pink); font-weight:600; }
+  .toc a.on .n { color:var(--pink); }
+  .toc a:focus-visible { outline:2px solid var(--pink); outline-offset:2px; }
+
+  .top { padding:64px 0 20px; }
+  .eyebrow { font-family:var(--f-mono); font-size:11px; letter-spacing:.18em;
+             text-transform:uppercase; color:var(--pink); margin:0 0 20px; }
+  h1 { font-size:clamp(34px,5.5vw,52px); line-height:1.12; letter-spacing:-.03em;
+       font-weight:800; margin:0 0 20px; text-wrap:balance; color:var(--navy); }
+  .dek { font-size:18px; line-height:1.65; color:var(--muted); max-width:62ch; margin:0 0 32px; }
+  .meta { display:flex; flex-wrap:wrap; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+  .meta div { flex:1 1 130px; padding:14px 18px 14px 0; }
+  .meta dt { font-family:var(--f-mono); font-size:10px; letter-spacing:.13em;
+             text-transform:uppercase; color:var(--faint); margin:0 0 4px; }
+  .meta dd { margin:0; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+
+  section { padding-top:68px; scroll-margin-top:24px; }
+  .sec-head { display:flex; align-items:baseline; gap:14px; border-bottom:2px solid var(--navy);
+              padding-bottom:10px; margin-bottom:28px; flex-wrap:wrap; }
+  .sec-num { font-family:var(--f-mono); font-size:12px; font-weight:700; color:var(--pink);
+             letter-spacing:.1em; flex:none; }
+  h2 { font-size:clamp(22px,3.1vw,29px); line-height:1.25; letter-spacing:-.02em;
+       font-weight:800; margin:0; color:var(--navy); text-wrap:balance; }
+  .stars { font-family:var(--f-mono); font-size:13px; color:var(--yellow);
+           margin-left:auto; letter-spacing:.1em; }
+  h3 { font-size:18px; font-weight:700; letter-spacing:-.01em; margin:36px 0 12px;
+       color:var(--ink); text-wrap:balance; }
+  h4 { font-size:14px; font-weight:700; margin:24px 0 8px; color:var(--ink); }
+
+  p { margin:0 0 14px; max-width:var(--maxw); }
+  ul, ol { margin:0 0 14px; padding-left:22px; max-width:var(--maxw); }
+  li { margin-bottom:6px; }
+  li > ul, li > ol { margin-top:6px; margin-bottom:0; }
+  a { color:var(--pink); }
+
+  code { font-family:var(--f-mono); font-size:.875em; background:var(--code-bg);
+         padding:.12em .36em; border-radius:3px; word-break:break-word; }
+  pre { font-family:var(--f-mono); font-size:13px; line-height:1.65; background:var(--code-bg);
+        border:1px solid var(--rule-2); border-left:3px solid var(--navy); margin:0 0 18px;
+        padding:15px 17px; overflow-x:auto; tab-size:4; }
+  pre code { background:none; padding:0; font-size:1em; }
+  .cm { color:var(--faint); } .st { color:var(--ok); } .kw { color:var(--pink); font-weight:600; }
+
+  .tw { overflow-x:auto; margin:0 0 20px; border:1px solid var(--rule); }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { text-align:left; padding:9px 13px; border-bottom:1px solid var(--rule-2); vertical-align:top; }
+  thead th { background:var(--rule-2); font-family:var(--f-mono); font-size:10.5px;
+             letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+             font-weight:700; white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+  td code { white-space:nowrap; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; }
+
+  .note { border:1px solid var(--rule); background:var(--panel); padding:15px 18px;
+          margin:0 0 20px; max-width:var(--maxw); }
+  .note > :last-child { margin-bottom:0; }
+  .note .tag { display:block; font-family:var(--f-mono); font-size:10px; letter-spacing:.14em;
+               text-transform:uppercase; margin-bottom:7px; font-weight:700; }
+  .note.w { border-left:3px solid var(--warn); } .note.w .tag { color:var(--warn); }
+  .note.t { border-left:3px solid var(--ok); }   .note.t .tag { color:var(--ok); }
+  .note.e { border-left:3px solid var(--err); }  .note.e .tag { color:var(--err); }
+
+  /* 과제 카드 */
+  .brief { border:1px solid var(--rule); background:var(--panel); margin:0 0 24px; }
+  .brief dl { display:grid; grid-template-columns:88px 1fr; gap:0; margin:0; font-size:14px; }
+  .brief dt { font-family:var(--f-mono); font-size:10px; letter-spacing:.11em;
+              text-transform:uppercase; color:var(--faint); padding:11px 0 11px 16px;
+              border-bottom:1px solid var(--rule-2); }
+  .brief dd { margin:0; padding:11px 16px 11px 0; border-bottom:1px solid var(--rule-2); line-height:1.6; }
+  .brief dt:last-of-type, .brief dl > dd:last-child { border-bottom:none; }
+
+  /* 체크리스트 */
+  .task { list-style:none; padding-left:0; counter-reset:t; max-width:var(--maxw); }
+  .task > li { counter-increment:t; position:relative; padding-left:34px; margin-bottom:14px; }
+  .task > li::before {
+    content:counter(t); position:absolute; left:0; top:2px;
+    width:22px; height:22px; border:1.5px solid var(--pink); color:var(--pink);
+    font-family:var(--f-mono); font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; border-radius:50%;
+  }
+  .task ul { margin-top:6px; }
+
+  /* 정답 확인 */
+  .check { border:1px solid var(--ok); background:color-mix(in srgb, var(--ok) 7%, transparent);
+           padding:14px 17px; margin:0 0 20px; max-width:var(--maxw); }
+  .check .tag { display:block; font-family:var(--f-mono); font-size:10px; letter-spacing:.14em;
+                text-transform:uppercase; color:var(--ok); font-weight:700; margin-bottom:8px; }
+  .check table { font-size:13.5px; }
+  .check th, .check td { padding:5px 10px 5px 0; border-bottom:1px solid color-mix(in srgb, var(--ok) 20%, transparent); }
+  .check thead th { background:none; }
+  .check tbody tr:last-child td { border-bottom:none; }
+
+  .foot { margin-top:80px; padding-top:22px; border-top:1px solid var(--rule);
+          font-size:13px; color:var(--muted); }
+  .foot p { max-width:var(--maxw); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="toc" aria-label="목차">
+    <p class="toc-h">목차</p>
+    <ol>
+      <li><a href="#gap"><span class="n">00</span><span>비어 있는 곳</span></a></li>
+      <li><a href="#pick"><span class="n">01</span><span>데이터셋 고르기</span></a></li>
+      <li><a href="#t1"><span class="n">과제1</span><span>NumPy 기초</span></a></li>
+      <li><a href="#t2"><span class="n">과제2</span><span>시계열</span></a></li>
+      <li><a href="#t3"><span class="n">과제3</span><span>대용량 처리</span></a></li>
+      <li><a href="#t4"><span class="n">과제4</span><span>통계·결측</span></a></li>
+      <li><a href="#t5"><span class="n">과제5</span><span>종합 리포트</span></a></li>
+      <li><a href="#more"><span class="n">99</span><span>더 찾아보기</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <header class="top">
+      <p class="eyebrow">practice · data08 – data17 이후</p>
+      <h1>손이 기억할 때까지,<br>연습 과제 5선</h1>
+      <p class="dek">
+        지금까지 배운 것을 복습하는 과제가 아니라, <strong>아직 안 해본 것을 골라 채우는</strong> 과제입니다.
+        데이터는 대부분 이미 <code>source/</code> 폴더에 있거나 설치된 패키지에 들어 있어
+        내려받지 않고 바로 시작할 수 있습니다.
+      </p>
+      <dl class="meta">
+        <div><dt>과제 수</dt><dd>5개 · 난이도 순</dd></div>
+        <div><dt>준비물</dt><dd>이미 설치된 패키지</dd></div>
+        <div><dt>채점</dt><dd>과제마다 정답 수치 제공</dd></div>
+      </dl>
+    </header>
+
+    <!-- ===== 00 갭 분석 ===== -->
+    <section id="gap">
+      <div class="sec-head"><span class="sec-num">00</span><h2>지금 비어 있는 곳</h2></div>
+
+      <p>
+        <code>data08</code>부터 <code>data17</code>까지 훑어보면 판다스 쪽은 꽤 촘촘합니다.
+        반면 <strong>손대지 않은 영역이 뚜렷하게 넷</strong> 있습니다. 과제는 이 넷을 메우도록 짰습니다.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:30%">영역</th><th style="width:12%">상태</th><th>메모</th></tr></thead>
+          <tbody>
+            <tr><td>Series · DataFrame · 입출력</td><td>충분</td><td>data08</td></tr>
+            <tr><td>결측 · 중복 · 구간분할 · 인코딩</td><td>충분</td><td>data09–11</td></tr>
+            <tr><td>groupby · merge · pivot · 멀티인덱스</td><td>충분</td><td>data12</td></tr>
+            <tr><td>기술통계 · 상관계수</td><td>충분</td><td>data17</td></tr>
+            <tr><td><b>NumPy 배열 연산</b></td><td><b>거의 없음</b></td><td>import 만 하고 실제로 쓴 적이 거의 없다 — <b>가장 큰 구멍</b></td></tr>
+            <tr><td><b>시계열 (datetime)</b></td><td><b>없음</b></td><td><code>resample</code>, <code>rolling</code>, 날짜 인덱스</td></tr>
+            <tr><td><b>대용량 처리</b></td><td><b>없음</b></td><td>281MB 파일을 그냥 통째로 읽고 있었다</td></tr>
+            <tr><td><b>wide ↔ long 변환</b></td><td>맛만 봄</td><td><code>melt</code> 는 아직. KOSIS 데이터가 딱 이 형태다</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note t">
+        <span class="tag">과제를 푸는 방법</span>
+        <p>
+          각 과제는 <b>세부 과제 → 검증 기준</b> 순서입니다.
+          먼저 스스로 코드를 짜고, 마지막의 <b>검증</b> 표와 숫자를 맞춰보세요.
+          숫자가 안 맞으면 어디서 틀렸는지 되짚는 것이 이 과제의 핵심입니다.
+          <b>답 코드는 일부러 넣지 않았습니다.</b> 힌트만 있습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 01 데이터셋 ===== -->
+    <section id="pick">
+      <div class="sec-head"><span class="sec-num">01</span><h2>어떤 데이터로 연습할까</h2></div>
+
+      <h3>지금 바로 쓸 수 있는 것</h3>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:34%">데이터</th><th style="width:16%">크기</th><th>연습하기 좋은 것</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>load_digits()</code><br><span style="color:var(--faint);font-size:12.5px">sklearn 내장</span></td>
+              <td class="num">1797 × 64</td>
+              <td><b>NumPy 전반.</b> 64개 숫자가 8×8 손글씨 이미지라 <code>reshape</code>·축 연산·마스킹이 눈에 보인다</td>
+            </tr>
+            <tr>
+              <td><code>시군구_성_월별_출생...csv</code><br><span style="color:var(--faint);font-size:12.5px">source/</span></td>
+              <td class="num">17 시도<br>336 개월</td>
+              <td><b>시계열 · wide→long.</b> 1997.01–2024.12 월별. 2단 헤더까지 있어 전처리 연습에 제격</td>
+            </tr>
+            <tr>
+              <td><code>소상공인...상가정보.csv</code><br><span style="color:var(--faint);font-size:12.5px">source/</span></td>
+              <td class="num">540,516 행<br>281 MB</td>
+              <td><b>대용량 처리.</b> <code>usecols</code>, <code>dtype</code> 최적화, <code>chunksize</code></td>
+            </tr>
+            <tr>
+              <td><code>load_wine()</code><br><span style="color:var(--faint);font-size:12.5px">sklearn 내장</span></td>
+              <td class="num">178 × 13</td>
+              <td><b>통계·전처리.</b> 3개 그룹, 척도가 제각각인 13개 특성 — 표준화가 왜 필요한지 체감된다</td>
+            </tr>
+            <tr>
+              <td><code>hollys_store_geo_kakao_final.csv</code><br><span style="color:var(--faint);font-size:12.5px">source/</span></td>
+              <td class="num">446 행</td>
+              <td>문자열 처리, 지리 데이터. 이미 다뤄봤으니 확장 과제용</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>더 받고 싶다면</h3>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:26%">출처</th><th>특징</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>seaborn 내장</b></td>
+              <td><code>sns.load_dataset('titanic')</code> — 결측치가 실제로 있어 전처리 연습에 좋다.
+                  <code>flights</code>는 시계열, <code>penguins</code>는 결측+범주형. 인터넷 필요</td>
+            </tr>
+            <tr>
+              <td><b>공공데이터포털</b><br>data.go.kr</td>
+              <td>지금 쓰는 상가정보의 출처. 지저분한 실무 데이터를 다루는 훈련이 된다</td>
+            </tr>
+            <tr>
+              <td><b>KOSIS</b><br>kosis.kr</td>
+              <td>인구·경제 통계. <b>2단 헤더와 wide 형식</b>이 기본이라 <code>melt</code> 연습에 좋다</td>
+            </tr>
+            <tr>
+              <td><b>서울열린데이터광장</b><br>data.seoul.go.kr</td>
+              <td>지하철 승하차, 따릉이 대여 — <b>시계열 + 지리</b> 조합이 풍부하다</td>
+            </tr>
+            <tr>
+              <td><b>Kaggle</b></td>
+              <td>정제된 데이터가 많아 분석 자체에 집중할 수 있다. 다만 전처리 훈련은 덜 된다</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note w">
+        <span class="tag">데이터를 고를 때</span>
+        <p>
+          깨끗한 데이터만 다루면 실력이 늘지 않습니다.
+          <b>결측치가 있고, 열 이름이 이상하고, 단위가 섞인</b> 데이터를 일부러 고르세요.
+          이번 세션에서 겪은 <code>'비알코올 '</code> 뒤 공백이나 2018년 기준 지명 문제 같은 것이
+          실무에서 시간을 가장 많이 잡아먹습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 과제 1 ===== -->
+    <section id="t1">
+      <div class="sec-head">
+        <span class="sec-num">과제 1</span><h2>NumPy로 손글씨 들여다보기</h2>
+        <span class="stars">★☆☆</span>
+      </div>
+
+      <div class="brief">
+        <dl>
+          <dt>데이터</dt><dd><code>from sklearn.datasets import load_digits</code> — 1797장의 8×8 손글씨 숫자</dd>
+          <dt>목표</dt><dd>배열의 모양·축·브로드캐스팅·불리언 마스킹을 손에 익힌다</dd>
+          <dt>왜 이것</dt><dd>64개 숫자가 실제로는 <b>그림</b>이라, 축 연산이 무슨 뜻인지 눈으로 확인된다</dd>
+        </dl>
+      </div>
+
+      <ol class="task">
+        <li>
+          <b>배열의 정체 파악하기</b><br>
+          <code>data</code>의 <code>shape</code>, <code>ndim</code>, <code>dtype</code>, <code>size</code>를 출력하고
+          각각이 무슨 뜻인지 주석으로 적으세요. 값의 최소·최대도 확인합니다.
+        </li>
+        <li>
+          <b>1차원을 2차원으로</b><br>
+          첫 번째 샘플(<code>data[0]</code>, 길이 64)을 8×8로 <code>reshape</code>해서
+          <code>plt.imshow(..., cmap='gray')</code>로 그려보세요. 숫자 <b>0</b>의 모양이 보이면 성공입니다.
+          <ul><li>이어서 앞 10장을 <code>subplot</code>으로 한 줄에 늘어놓아 보세요.</li></ul>
+        </li>
+        <li>
+          <b>축(axis)의 의미</b><br>
+          <code>data.mean(axis=0)</code>과 <code>data.mean(axis=1)</code>의 shape가 왜 다른지 설명하세요.
+          <ul>
+            <li><code>axis=0</code> 결과를 8×8로 reshape해서 그리면 <b>"모든 숫자의 평균 이미지"</b>가 나옵니다.</li>
+            <li>가장자리 픽셀의 평균이 0에 가까운 이유도 생각해 보세요.</li>
+          </ul>
+        </li>
+        <li>
+          <b>브로드캐스팅으로 정규화</b><br>
+          픽셀값 0~16을 0~1로 바꾸세요. 반복문 없이 한 줄이어야 합니다.
+          <ul><li>이어서 <b>열(픽셀)마다</b> 평균 0·표준편차 1이 되도록 표준화해 보세요. 표준편차가 0인 픽셀에서 무슨 일이 생기는지 확인하고 대처하세요.</li></ul>
+        </li>
+        <li>
+          <b>불리언 마스킹</b><br>
+          숫자 <b>3</b>인 샘플만 골라 개수를 세고, 그 평균 이미지를 그리세요.
+          <ul><li><code>3</code> 또는 <code>8</code>인 샘플만 고르려면? (<code>np.isin</code> 또는 <code>|</code>)</li></ul>
+        </li>
+        <li>
+          <b>반복문 vs 벡터화</b><br>
+          모든 샘플의 픽셀 합을 ① <code>for</code>문 ② <code>data.sum(axis=1)</code> 두 방식으로 구하고
+          <code>%timeit</code>으로 속도를 비교하세요. 몇 배 차이가 나는지 적어두세요.
+        </li>
+        <li>
+          <b>NumPy → 판다스</b><br>
+          <code>data</code>를 DataFrame으로 만들고 <code>target</code>을 열로 붙인 뒤,
+          숫자별 픽셀 평균을 <code>groupby</code>로 구하세요. 결과 shape가 <code>(10, 64)</code>면 맞습니다.
+        </li>
+      </ol>
+
+      <div class="check">
+        <span class="tag">검증</span>
+        <table>
+          <tbody>
+            <tr><td><code>data.shape</code></td><td class="num">(1797, 64)</td></tr>
+            <tr><td>값 범위</td><td class="num">0.0 ~ 16.0</td></tr>
+            <tr><td><code>data.mean(axis=0).shape</code></td><td class="num">(64,)</td></tr>
+            <tr><td><code>data.mean(axis=1).shape</code></td><td class="num">(1797,)</td></tr>
+            <tr><td>숫자 3인 샘플 수</td><td class="num">183</td></tr>
+            <tr><td>클래스별 개수 범위</td><td class="num">174 ~ 183</td></tr>
+            <tr><td>groupby 결과 shape</td><td class="num">(10, 64)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 과제 2 ===== -->
+    <section id="t2">
+      <div class="sec-head">
+        <span class="sec-num">과제 2</span><h2>28년치 출생 데이터로 시계열 다루기</h2>
+        <span class="stars">★★☆</span>
+      </div>
+
+      <div class="brief">
+        <dl>
+          <dt>데이터</dt><dd><code>source/시군구_성_월별_출생_20260730172059.csv</code></dd>
+          <dt>목표</dt><dd>2단 헤더 정리 → wide를 long으로 → 날짜 인덱스 → 리샘플링·이동평균</dd>
+          <dt>왜 이것</dt><dd>KOSIS 데이터의 <b>전형적인 형태</b>다. 이걸 다룰 줄 알면 통계청 자료 대부분을 쓸 수 있다</dd>
+        </dl>
+      </div>
+
+      <ol class="task">
+        <li>
+          <b>2단 헤더 다루기</b><br>
+          이 파일은 헤더가 두 줄입니다. 첫 줄은 기간(<code>1997.01</code>), 둘째 줄은 항목(<code>계 (명)</code>).
+          <code>pd.read_csv(..., header=[0,1])</code>로 읽고 컬럼을 한 줄로 평탄화하세요.
+          <ul><li><code>'전국'</code> 행은 시도 합계이므로 제외합니다.</li></ul>
+        </li>
+        <li>
+          <b>wide → long 변환</b><br>
+          월별 <b>'계'</b> 열만 골라 <code>melt</code>로 세로 형태로 바꾸세요.
+          결과는 <code>시도 · 연월 · 출생아수</code> 세 열이어야 합니다.
+          <ul><li>연간 합계 열(<code>1997</code> 같은 것)이 섞이지 않게 주의하세요. 월별 열은 <code>.</code>이 있습니다.</li></ul>
+        </li>
+        <li>
+          <b>날짜 타입으로</b><br>
+          <code>'1997.01'</code> 문자열을 <code>pd.to_datetime(..., format='%Y.%m')</code>으로 바꾸고
+          인덱스로 설정하세요. <code>dt.year</code>, <code>dt.month</code>, <code>dt.quarter</code>도 뽑아보세요.
+        </li>
+        <li>
+          <b>리샘플링</b><br>
+          전국 월별 합계를 만든 뒤 <code>resample</code>로 <b>연간</b>·<b>분기</b> 합계를 구하세요.
+          <ul><li>연도별 출생아 수 추이를 꺾은선으로 그리면 감소 추세가 한눈에 보입니다.</li></ul>
+        </li>
+        <li>
+          <b>이동평균으로 계절성 걷어내기</b><br>
+          월별 데이터에 <code>rolling(12).mean()</code>을 적용해 원본과 겹쳐 그리세요.
+          <ul><li>왜 12개월인지, 앞의 11개월이 <code>NaN</code>인 이유를 설명하세요.</li></ul>
+        </li>
+        <li>
+          <b>계절성 확인</b><br>
+          월(1~12)별 평균 출생아 수를 구해 <b>어느 달에 아이가 가장 많이 태어나는지</b> 확인하세요.
+        </li>
+        <li>
+          <b>시도별 비교</b><br>
+          2015년 대비 2024년 출생아 수 <b>감소율</b>을 시도별로 구해 정렬하세요.
+          가장 많이 줄어든 곳과 가장 덜 줄어든 곳은 어디인가요?
+        </li>
+        <li>
+          <b>성비</b><br>
+          '남자'와 '여자' 열도 long으로 만들어 연도별 <b>출생성비</b>(여아 100명당 남아)를 계산하세요.
+          <ul><li>1997년과 2024년을 비교하면 사회 변화가 숫자로 드러납니다.</li></ul>
+        </li>
+      </ol>
+
+      <div class="check">
+        <span class="tag">검증</span>
+        <table>
+          <tbody>
+            <tr><td>시도 수 (전국 제외)</td><td class="num">17</td></tr>
+            <tr><td>개월 수</td><td class="num">336 (1997.01 ~ 2024.12)</td></tr>
+            <tr><td>long 변환 후 행 수</td><td class="num">5,712 (= 17 × 336)</td></tr>
+            <tr><td>2022년 전국 합계</td><td class="num">249,186</td></tr>
+            <tr><td>2023년 전국 합계</td><td class="num">230,028</td></tr>
+            <tr><td>2024년 전국 합계</td><td class="num">238,317</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note t">
+        <span class="tag">한 걸음 더</span>
+        <p>
+          2023년이 최저점이고 2024년에 반등했습니다. <b>왜 그런지</b>를 데이터로 확인해 보세요 —
+          모든 시도에서 늘었는지, 특정 지역만 늘었는지. 월별로 보면 언제부터 돌아섰는지도 보입니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 과제 3 ===== -->
+    <section id="t3">
+      <div class="sec-head">
+        <span class="sec-num">과제 3</span><h2>281MB 파일을 다루는 법</h2>
+        <span class="stars">★★☆</span>
+      </div>
+
+      <div class="brief">
+        <dl>
+          <dt>데이터</dt><dd><code>source/소상공인시장진흥공단_상가(상권)정보_서울_202503.csv</code> — 540,516행 × 39열</dd>
+          <dt>목표</dt><dd>메모리를 의식하며 읽고, 나눠서 처리하고, 그룹으로 집계한다</dd>
+          <dt>왜 이것</dt><dd>지금까지는 <code>read_csv</code>로 통째로 읽었다. 실무에서는 그러다 메모리가 터진다</dd>
+        </dl>
+      </div>
+
+      <ol class="task">
+        <li>
+          <b>얼마나 큰지 재기</b><br>
+          먼저 <code>nrows=5</code>로 열 이름만 확인하세요. 39개 열 중 <b>실제로 필요한 것</b>을 골라 목록으로 만듭니다.
+          <ul><li>파일 크기와 실제 메모리 사용량은 다릅니다. <code>df.memory_usage(deep=True).sum()</code>으로 확인하세요.</li></ul>
+        </li>
+        <li>
+          <b><code>usecols</code>로 줄이기</b><br>
+          필요한 7개 열만 읽고, 전체를 읽었을 때와 <b>메모리·시간</b>을 비교하세요.
+          <ul><li>추천 열: 상호명, 상권업종대분류명, 상권업종중분류명, 시군구명, 행정동명, 경도, 위도</li></ul>
+        </li>
+        <li>
+          <b>dtype 최적화</b><br>
+          반복이 많은 문자열 열을 <code>category</code>로, 좌표를 <code>float32</code>로 바꾸고
+          메모리가 얼마나 줄었는지 재세요. <b>70% 이상</b> 줄어야 합니다.
+          <ul><li><code>pd.to_numeric(..., downcast='float')</code></li></ul>
+        </li>
+        <li>
+          <b><code>chunksize</code>로 나눠 읽기</b><br>
+          <code>chunksize=100000</code>으로 나눠 읽으면서 <b>시군구별 점포 수</b>를 누적 집계하세요.
+          한 번에 다 읽었을 때와 결과가 같아야 합니다.
+          <ul><li>각 조각의 <code>value_counts()</code>를 더해 나가면 됩니다.</li></ul>
+        </li>
+        <li>
+          <b>그룹 집계</b><br>
+          시군구별 × 업종대분류별 점포 수를 <code>pivot_table</code>로 만드세요.
+          <ul><li>강남구에서 가장 많은 업종은? 모든 구에서 그런가요?</li></ul>
+        </li>
+        <li>
+          <b>업종 다양성 지표 만들기</b><br>
+          행정동마다 <b>업종 중분류가 몇 종류나 있는지</b>(<code>nunique</code>) 세어, 다양성이 높은 동 상위 10곳을 뽑으세요.
+          <ul><li>점포 수가 많은 동과 다양성이 높은 동이 같은가요? 다르다면 왜일까요?</li></ul>
+        </li>
+        <li>
+          <b>좌표 검증</b><br>
+          경도·위도가 <b>서울 범위를 벗어난</b> 행이 있는지 확인하세요.
+          (대략 위도 37.4~37.7, 경도 126.7~127.2)
+          <ul><li>이상치가 있다면 어떤 업종·지역인지 살펴보세요. 데이터 오류일 수도, 실제일 수도 있습니다.</li></ul>
+        </li>
+      </ol>
+
+      <div class="check">
+        <span class="tag">검증</span>
+        <table>
+          <tbody>
+            <tr><td>전체 행 수</td><td class="num">540,516</td></tr>
+            <tr><td>7개 열만 읽었을 때 메모리</td><td class="num">약 242 MB</td></tr>
+            <tr><td>category + float32 적용 후</td><td class="num">약 55 MB (77% 절감)</td></tr>
+            <tr><td>시군구 수 / 행정동 수</td><td class="num">25 / 425</td></tr>
+            <tr><td>업종 대분류 / 중분류</td><td class="num">10종 / 75종</td></tr>
+            <tr><td>점포 수 1위 자치구</td><td class="num">강남구 64,716</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note w">
+        <span class="tag">주의</span>
+        <p>
+          <code>low_memory=False</code> 없이 읽으면 <code>DtypeWarning</code>이 뜹니다.
+          판다스가 파일을 조각내어 읽으면서 <b>조각마다 다른 타입으로 추측</b>했다는 뜻입니다.
+          경고를 끄는 대신 <code>dtype=</code>으로 직접 지정하는 습관을 들이세요.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 과제 4 ===== -->
+    <section id="t4">
+      <div class="sec-head">
+        <span class="sec-num">과제 4</span><h2>척도가 다른 데이터의 통계</h2>
+        <span class="stars">★★☆</span>
+      </div>
+
+      <div class="brief">
+        <dl>
+          <dt>데이터</dt><dd><code>from sklearn.datasets import load_wine</code> — 178개 와인 × 13개 성분, 3개 품종</dd>
+          <dt>목표</dt><dd>표준화가 왜 필요한지 체감하고, 결측치 처리 방법별 결과 차이를 비교한다</dd>
+          <dt>왜 이것</dt><dd>13개 특성의 <b>단위와 자릿수가 제각각</b>이다. 그냥 비교하면 큰 숫자가 결과를 지배한다</dd>
+        </dl>
+      </div>
+
+      <ol class="task">
+        <li>
+          <b>척도 차이 확인</b><br>
+          <code>describe()</code>로 13개 특성의 평균과 표준편차를 보세요.
+          가장 큰 값과 가장 작은 값의 <b>자릿수 차이</b>가 몇 배인지 계산합니다.
+        </li>
+        <li>
+          <b>표준화 전후 비교</b><br>
+          원본과 표준화(z-score) 데이터로 각각 <b>상자그림</b>을 그려 나란히 놓으세요.
+          원본에서는 특성 하나가 그래프를 지배하는 모습이 보일 겁니다.
+          <ul><li>공식은 직접 구현하세요 — <code>(x - x.mean()) / x.std()</code></li></ul>
+        </li>
+        <li>
+          <b>품종별 특성 비교</b><br>
+          <code>target</code>으로 <code>groupby</code>해서 품종별 평균을 구하고,
+          <b>어떤 성분이 품종을 가장 잘 구분하는지</b> 찾으세요.
+          <ul><li>힌트: 그룹 간 차이가 크고 그룹 안 흩어짐이 작은 특성.</li></ul>
+        </li>
+        <li>
+          <b>상관관계</b><br>
+          13개 특성의 상관행렬을 구해 히트맵으로 그리세요.
+          상관계수 <b>절댓값 0.5 이상</b>인 쌍만 뽑아 표로 정리합니다.
+          <ul><li><code>pearson</code>과 <code>spearman</code> 결과가 다른 쌍이 있나요? 있다면 그 관계는 왜 다를까요?</li></ul>
+        </li>
+        <li>
+          <b>결측치 만들어서 처리해 보기</b><br>
+          이 데이터엔 결측치가 없습니다. 직접 만드세요 —
+          무작위로 <b>10%</b>를 <code>NaN</code>으로 바꿉니다(<code>random_state</code> 고정).
+          <ul>
+            <li>세 방법으로 채우기: ① 전체 평균 ② <b>품종별</b> 평균 ③ <code>KNNImputer</code></li>
+            <li>각 방법의 결과를 <b>원래 값</b>과 비교해 오차(MAE)를 구하세요.</li>
+            <li>어느 방법이 가장 정확한가요? 왜 그럴까요?</li>
+          </ul>
+        </li>
+        <li>
+          <b>이상치 탐지</b><br>
+          IQR 방법으로 특성별 이상치 개수를 세세요.
+          <ul><li>표준화 <b>전후</b>로 이상치 개수가 달라지나요? 달라지지 않는다면 그 이유는?</li></ul>
+        </li>
+      </ol>
+
+      <div class="check">
+        <span class="tag">검증</span>
+        <table>
+          <tbody>
+            <tr><td>데이터 shape</td><td class="num">(178, 13)</td></tr>
+            <tr><td>품종 수 / 각 개수</td><td class="num">3종 · 59 / 71 / 48</td></tr>
+            <tr><td>표준화 후 각 열 평균</td><td class="num">≈ 0 (1e-15 수준)</td></tr>
+            <tr><td>표준화 후 각 열 표준편차</td><td class="num">1.0</td></tr>
+            <tr><td>10% 결측 주입 시 NaN 개수</td><td class="num">약 231 (= 178 × 13 × 0.1)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note t">
+        <span class="tag">이 과제의 핵심</span>
+        <p>
+          5번에서 <b>품종별 평균</b>으로 채운 것이 전체 평균보다 정확할 가능성이 높습니다.
+          같은 그룹 안의 값들이 서로 비슷하기 때문입니다.
+          "결측치는 평균으로 채운다"를 기계적으로 적용하지 말고,
+          <b>데이터에 그룹 구조가 있는지</b> 먼저 보라는 것이 이 과제의 교훈입니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 과제 5 ===== -->
+    <section id="t5">
+      <div class="sec-head">
+        <span class="sec-num">과제 5</span><h2>종합 — 하나의 질문에 답하기</h2>
+        <span class="stars">★★★</span>
+      </div>
+
+      <div class="brief">
+        <dl>
+          <dt>데이터</dt><dd>상가정보 + 인구 + 출생 데이터를 <b>엮어서</b></dd>
+          <dt>목표</dt><dd>질문을 세우고, 데이터를 합치고, 근거를 만들어 글로 쓴다</dd>
+          <dt>분량</dt><dd>노트북 1개 + 결론 5~10줄</dd>
+        </dl>
+      </div>
+
+      <p>
+        앞선 넷이 기능 연습이라면 이건 <strong>실전</strong>입니다.
+        할리스 분석에서 하신 것과 같은 흐름이되, 이번엔 <b>질문을 직접 세우는 것</b>부터 시작합니다.
+      </p>
+
+      <h4>주제 예시 — 하나 고르거나 직접 만드세요</h4>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:32%">질문</th><th>필요한 작업</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>학원이 많은 동네는 어디인가</b><br>인구 대비로 보면 달라지는가</td>
+              <td>업종 '교육' 필터링 → 행정동별 집계 → 인구 데이터와 <code>merge</code> → 지도</td>
+            </tr>
+            <tr>
+              <td><b>출생아 수가 줄어든 지역과<br>소아과·학원 분포는 관계가 있는가</b></td>
+              <td>출생 데이터 시도별 감소율 + 상가 업종별 밀도 → 상관분석 → 산점도</td>
+            </tr>
+            <tr>
+              <td><b>강남구와 마포구의 상권은<br>어떻게 다른가</b></td>
+              <td>두 구 비교 → 업종 구성비 → <code>pivot_table</code> → 누적 막대그래프</td>
+            </tr>
+            <tr>
+              <td><b>커피전문점이 포화된 동네는 어디인가</b></td>
+              <td>비알코올 업종 → 행정동별 밀도 → 상위/하위 비교 → 지도</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>반드시 포함할 것</h4>
+
+      <ol class="task">
+        <li>
+          <b>질문 한 문장</b> — 노트북 맨 위에 적으세요.
+          "데이터를 분석한다"가 아니라 <b>"A는 B인가?"</b> 형태여야 합니다.
+        </li>
+        <li>
+          <b>데이터 출처와 기준 시점</b> — 어떤 파일을 썼고 언제 기준인지.
+          이번 세션에서 2018년 GeoJSON 때문에 겪은 일을 기억하세요.
+        </li>
+        <li>
+          <b>전처리 기록</b> — 무엇을 버렸고 왜 버렸는지.
+          결측 몇 %를 어떻게 처리했는지 숫자로 적습니다.
+        </li>
+        <li>
+          <b>두 개 이상의 데이터 결합</b> — <code>merge</code> 전후 <b>행 수를 반드시 확인</b>하고 기록하세요.
+          줄었다면 왜 줄었는지 설명합니다.
+        </li>
+        <li>
+          <b>그래프 3개 이상</b> — 분포 1개, 비교 1개, 관계 1개.
+          모든 그래프에 제목과 축 이름을 답니다.
+        </li>
+        <li>
+          <b>결론 5~10줄</b> — 숫자를 근거로. 예상과 달랐던 점을 반드시 포함하세요.
+        </li>
+        <li>
+          <b>한계 3줄</b> — 이 분석으로 <b>말할 수 없는 것</b>을 적으세요.
+          유동인구를 반영하지 못했다든가, 폐업 점포가 포함됐다든가.
+        </li>
+      </ol>
+
+      <div class="note e">
+        <span class="tag">가장 흔한 함정</span>
+        <p>
+          <b>상관관계를 인과관계로 쓰는 것</b>입니다.
+          "학원이 많아서 출생아가 많다"가 아니라 "학원 밀도와 출생아 수는 양의 상관을 보인다"까지만 쓸 수 있습니다.
+          할리스 분석에서 "전북의 매장 밀도가 높다"는 사실이지만
+          "전북 사람들이 커피를 좋아해서"는 데이터로 뒷받침되지 않는 것과 같습니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 99 ===== -->
+    <section id="more">
+      <div class="sec-head"><span class="sec-num">99</span><h2>막히면 볼 것</h2></div>
+
+      <h3>이번 세션에서 만든 정리 자료</h3>
+      <ul>
+        <li><b>pandas 기본 정리</b> — 자료구조 · 입출력 · 확인 · 선택 · 조건검색 · 정렬</li>
+        <li><b>전처리와 응용 정리</b> — 결측 · 구간분할 · 인코딩 · groupby · merge · pivot</li>
+      </ul>
+
+      <h3>과제별로 새로 익힐 함수</h3>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:16%">과제</th><th>처음 쓰게 될 것</th></tr></thead>
+          <tbody>
+            <tr><td><b>1</b></td>
+              <td><code>reshape</code> <code>ndim</code> <code>axis=</code> <code>np.isin</code>
+                  <code>np.where</code> <code>plt.imshow</code> <code>%timeit</code></td></tr>
+            <tr><td><b>2</b></td>
+              <td><code>header=[0,1]</code> <code>melt</code> <code>to_datetime</code>
+                  <code>resample</code> <code>rolling</code> <code>dt.year</code> <code>dt.quarter</code></td></tr>
+            <tr><td><b>3</b></td>
+              <td><code>usecols</code> <code>chunksize</code> <code>memory_usage(deep=True)</code>
+                  <code>downcast</code> <code>nunique</code></td></tr>
+            <tr><td><b>4</b></td>
+              <td><code>KNNImputer</code> <code>boxplot</code> <code>corr(method=)</code>
+                  <code>np.random.choice</code> <code>mask</code></td></tr>
+            <tr><td><b>5</b></td>
+              <td>전부 — 그리고 <b>글쓰기</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note t">
+        <span class="tag">순서 제안</span>
+        <p>
+          <b>과제 1을 먼저</b> 하세요. NumPy가 가장 크게 비어 있고,
+          판다스가 내부적으로 NumPy 위에 얹혀 있어서 여기를 채우면 나머지가 쉬워집니다.
+          그다음 2번(시계열) → 3번(대용량) 순서를 권합니다.
+          4번은 언제 해도 좋고, 5번은 앞의 넷을 마친 뒤에 하세요.
+        </p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>
+        검증 수치는 모두 실제 실행으로 확인한 값입니다 —
+        digits (1797×64), 출생 데이터 (17개 시도 × 336개월 = 5,712행),
+        상가정보 (540,516행 · 메모리 242MB → 55MB), wine (178×13).
+        데이터는 <code>source/</code> 폴더와 scikit-learn 내장 데이터셋에 들어 있습니다.
+      </p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    if (!sections.length || !('IntersectionObserver' in window)) return;
+
+    var visible = {};
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+      var current = null;
+      for (var i = 0; i < sections.length; i++) {
+        if (visible[sections[i].id]) { current = sections[i].id; break; }
+      }
+      links.forEach(function (a) { a.classList.remove('on'); });
+      if (current && byId[current]) byId[current].classList.add('on');
+    }, { rootMargin: '-15% 0px -70% 0px' });
+
+    sections.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>
