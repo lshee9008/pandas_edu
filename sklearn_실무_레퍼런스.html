@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scikit-learn 실무 레퍼런스 &amp; 경사하강법 직접 구현</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f7f7f5; --bg3:#efeee9;
+  --fg:#1f1f1d; --fg2:#5f5e5a; --fg3:#8b8a84;
+  --line:#e2e1db; --line2:#cfcec7;
+  --acc:#534ab7; --acc-bg:#eeedfe;
+  --acc2:#0f6e56; --acc2-bg:#e1f5ee;
+  --warn:#854f0b; --warn-bg:#faeeda;
+  --dang:#a32d2d; --dang-bg:#fcebeb;
+  --code-bg:#f4f3ef;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18; --bg2:#222220; --bg3:#2b2b28;
+    --fg:#eceae4; --fg2:#a8a69f; --fg3:#7a7973;
+    --line:#33332f; --line2:#454540;
+    --acc:#afa9ec; --acc-bg:#2b2757;
+    --acc2:#5dcaa5; --acc2-bg:#0f3d31;
+    --warn:#efb45c; --warn-bg:#3d2c0e;
+    --dang:#f09595; --dang-bg:#3d1616;
+    --code-bg:#131312;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:120px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+     font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 100px}
+
+header.hero{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+header.hero h1{margin:0 0 8px;font-size:27px;font-weight:600;letter-spacing:-.02em}
+header.hero p{margin:0 0 14px;color:var(--fg2);font-size:14px}
+header.hero a{color:var(--acc)}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;
+       background:var(--bg3);color:var(--fg2);border:1px solid var(--line)}
+.badge.ok{background:var(--acc2-bg);color:var(--acc2);border-color:transparent}
+
+.toolbar{position:sticky;top:0;z-index:50;background:var(--bg);
+         border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:8px}
+.toolbar .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#q{flex:1;min-width:220px;padding:9px 12px;font-size:14px;font-family:var(--sans);
+   border:1px solid var(--line2);border-radius:8px;background:var(--bg2);color:var(--fg)}
+#q:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.chip{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:20px;
+      background:var(--bg2);color:var(--fg2);cursor:pointer;user-select:none;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--acc-bg);color:var(--acc);border-color:transparent;font-weight:600}
+.btn{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:8px;
+     background:var(--bg2);color:var(--fg);cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+.btn.primary:disabled{opacity:.4;cursor:not-allowed;background:var(--bg3);color:var(--fg3);border-color:var(--line2)}
+.count{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.count b{color:var(--acc)}
+
+nav.toc{display:flex;gap:5px;flex-wrap:wrap;padding:12px 0 4px;border-bottom:1px solid var(--line);margin-bottom:28px}
+nav.toc a{font-size:12px;padding:4px 9px;border-radius:6px;color:var(--fg2);
+          text-decoration:none;background:var(--bg2);border:1px solid var(--line)}
+nav.toc a:hover{color:var(--acc);border-color:var(--acc)}
+
+h2.lib{margin:44px 0 4px;font-size:22px;font-weight:600;letter-spacing:-.01em;
+       padding-bottom:8px;border-bottom:2px solid var(--fg)}
+h3.cat{margin:30px 0 10px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px}
+h3.cat::after{content:"";flex:1;height:1px;background:var(--line)}
+.cat-note{font-size:13px;color:var(--fg2);margin:-4px 0 12px}
+
+.item{display:grid;grid-template-columns:24px 1fr;gap:0 10px;
+      padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+      margin-bottom:7px;background:var(--bg2)}
+.item.sel{border-color:var(--acc);background:var(--acc-bg)}
+.item input[type=checkbox]{width:15px;height:15px;margin-top:5px;accent-color:var(--acc);cursor:pointer}
+.item .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.item .nm{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--acc)}
+.item .ds{font-size:13.5px;color:var(--fg2)}
+.item .tag{font-size:10.5px;padding:1px 6px;border-radius:4px;font-weight:600;letter-spacing:.02em}
+.tag.hot{background:var(--acc2-bg);color:var(--acc2)}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.avoid{background:var(--dang-bg);color:var(--dang)}
+.item pre{margin:8px 0 0;padding:10px 12px;background:var(--code-bg);border-radius:7px;
+          overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+          border:1px solid var(--line)}
+.cmt{color:var(--fg3)}
+
+pre.block{padding:15px 17px;background:var(--code-bg);border:1px solid var(--line);
+          border-radius:9px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12.5px;color:var(--fg2);background:var(--bg2)}
+td code,p code,li code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);
+                       padding:1.5px 5px;border-radius:4px}
+.callout{padding:13px 16px;border-radius:9px;margin:16px 0;font-size:13.5px;border:1px solid}
+.callout.good{background:var(--acc2-bg);border-color:transparent}
+.callout.info{background:var(--acc-bg);border-color:transparent}
+.callout.warn{background:var(--warn-bg);border-color:transparent}
+.callout.bad{background:var(--dang-bg);border-color:transparent}
+.callout > b:first-child{display:block;margin-bottom:6px;font-size:14px}
+.callout ol,.callout ul{margin:0;padding-left:20px}
+.callout li{margin-bottom:6px}
+.callout li:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.empty{padding:40px;text-align:center;color:var(--fg3);font-size:14px}
+.math{font-family:var(--mono);background:var(--bg3);padding:10px 14px;border-radius:8px;
+      font-size:13px;margin:10px 0;overflow-x:auto}
+
+#basket{position:fixed;right:20px;bottom:20px;width:min(430px,calc(100vw - 40px));
+        max-height:64vh;background:var(--bg);border:1px solid var(--line2);
+        border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);display:none;
+        flex-direction:column;z-index:100}
+#basket.on{display:flex}
+#basket .bh{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;
+            justify-content:space-between;align-items:center;font-size:13.5px;font-weight:600}
+#basket pre{margin:0;padding:14px;overflow:auto;font-family:var(--mono);
+            font-size:12px;line-height:1.6;flex:1;background:var(--code-bg)}
+#basket .bf{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px}
+.x{cursor:pointer;color:var(--fg3);font-size:18px;line-height:1;background:none;border:none}
+
+@media print{.toolbar,nav.toc,#basket,.item input{display:none}
+  .item{break-inside:avoid;background:#fff} body{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>scikit-learn 실무 레퍼런스</h1>
+  <p>체크박스로 골라 담고 <b>선택 복사</b>를 누르면 주석 달린 코드 묶음이 클립보드로 나옵니다. 하단에는 직접 구현한 <b>경사하강법을 sklearn 호환 추정기로 만든 것</b>이 있습니다. · 함께 보기: <a href="pandas_numpy_실무_레퍼런스.html">Pandas · NumPy 레퍼런스</a></p>
+  <div class="badges">
+    <span class="badge">scikit-learn 1.7.2</span>
+    <span class="badge">numpy 2.2.6</span>
+    <span class="badge">pandas 2.3.3</span>
+    <span class="badge ok">전 항목 실행 검증 완료</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="row">
+    <input id="q" type="search" placeholder="검색 — 함수명·설명·코드 전체 (예: 불균형, 인코딩, 튜닝, 임계값)" autocomplete="off">
+    <button class="chip" data-f="all" aria-pressed="true">전체</button>
+    <button class="chip" data-f="prep" aria-pressed="false">전처리</button>
+    <button class="chip" data-f="model" aria-pressed="false">모델</button>
+    <button class="chip" data-f="eval" aria-pressed="false">평가·튜닝</button>
+    <button class="chip" data-f="hot" aria-pressed="false">★ 핵심만</button>
+    <span class="count"><b id="nsel">0</b>개 선택</span>
+    <button class="btn primary" id="show" disabled>선택 복사</button>
+    <button class="btn" id="clr">해제</button>
+  </div>
+</div>
+
+<nav class="toc" id="toc"></nav>
+<main id="out"></main>
+
+<!-- ================= 경사하강법 ================= -->
+<section>
+<h2 class="lib" id="gd">경사하강법 직접 구현 — sklearn 호환 추정기</h2>
+<p class="cat-note">노트북에서 만든 경사하강법을 <code>Pipeline</code> · <code>cross_val_score</code> · <code>GridSearchCV</code>에 그대로 꽂을 수 있는 형태로 정리한 것입니다. 파일: <code>gd_from_scratch.py</code></p>
+
+<h3 class="cat">1. 원리 — 회귀와 분류가 같은 식으로 떨어진다</h3>
+<p>선형 회귀와 로지스틱 회귀는 손실 함수가 전혀 다른데도, 기울기를 정리하면 <b>똑같은 모양</b>이 됩니다. 그래서 학습 루프를 한 벌만 짜면 둘 다 처리할 수 있습니다.</p>
+
+<div class="math">
+<b>선형 회귀</b> — 예측 ŷ = Xw + b · 손실 J = (1/N) Σ (y − ŷ)²<br>
+&nbsp;&nbsp;→ ∂J/∂w = <b>−(2/N) · Xᵀ(y − ŷ)</b>
+</div>
+<div class="math">
+<b>로지스틱 회귀</b> — 예측 ŷ = σ(Xw + b) · 손실 J = −(1/N) Σ [y·log ŷ + (1−y)·log(1−ŷ)]<br>
+&nbsp;&nbsp;→ ∂J/∂w = <b>−(1/N) · Xᵀ(y − ŷ)</b> &nbsp;&nbsp;<span class="cmt">(시그모이드 미분이 로그손실 미분과 상쇄되어 사라짐)</span>
+</div>
+<div class="math">
+<b>갱신</b> &nbsp; w := w − α · ∂J/∂w &nbsp;&nbsp;<span class="cmt">기울기의 반대 방향으로 한 걸음</span>
+</div>
+
+<div class="callout info">
+  <b>노트북 버전과 달라진 점</b>
+  <ul>
+    <li><b>MSE 미분 계수 2/N을 되살렸습니다.</b> 노트북에서는 주석 처리되어 있었는데, 빠지면 실효 학습률이 절반이 됩니다. 수렴 자체는 되지만 "진짜 기울기"는 아닙니다.</li>
+    <li><b>부호 규약을 바꿨습니다.</b> 노트북은 갱신량 안에 마이너스를 넣고 <code>w = w + w_update</code>를 썼는데, 여기서는 기울기를 그대로 두고 <code>w -= lr * gW</code>로 씁니다. 교과서 표기와 일치해 헷갈리지 않습니다.</li>
+    <li><b>L1 / L2 규제를 실제로 구현했습니다.</b> 노트북에서는 인자만 선언되고 쓰이지 않았던 부분입니다.</li>
+    <li><b>미니배치 · SGD 모드, 학습 곡선 기록, 발산 감지</b>를 추가했습니다.</li>
+  </ul>
+</div>
+
+<h3 class="cat">2. 사용법</h3>
+<pre class="block"><code>from gd_from_scratch import GDRegressor, GDClassifier, plot_loss
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score, GridSearchCV, KFold
+
+<span class="cmt"># ★ 스케일링은 선택이 아니라 필수. 경사하강법은 피처 스케일이 다르면 수렴하지 않는다.</span>
+pipe = make_pipeline(StandardScaler(), GDRegressor(lr=0.1, epochs=1500, random_state=0))
+
+<span class="cmt"># 교차검증 — 일반 sklearn 모델과 똑같이 동작</span>
+cross_val_score(pipe, X, y, cv=KFold(5, shuffle=True, random_state=0), scoring='r2')
+
+<span class="cmt"># 하이퍼파라미터 탐색 — 학습률과 규제를 같이 찾는다</span>
+gs = GridSearchCV(pipe,
+        {'gdregressor__lr': [0.01, 0.05, 0.1],
+         'gdregressor__l2': [0, 0.001, 0.01]},
+        cv=5, scoring='r2',
+        error_score=np.nan)      <span class="cmt"># 발산한 조합은 nan으로 넘어가고 탐색은 계속된다</span>
+gs.fit(X, y)
+
+<span class="cmt"># 학습 곡선 — 수렴했는지 눈으로 확인 (디버깅의 8할)</span>
+pipe.fit(X, y)
+plot_loss(pipe.named_steps['gdregressor'])
+
+<span class="cmt"># 분류도 동일. predict_proba / decision_function 모두 제공</span>
+clf = make_pipeline(StandardScaler(), GDClassifier(lr=0.3, epochs=800, random_state=0))
+cross_val_score(clf, Xc, yc, cv=5, scoring='roc_auc')</code></pre>
+
+<h3 class="cat">3. 하이퍼파라미터 감각</h3>
+<table>
+<thead><tr><th style="width:16%">인자</th><th style="width:22%">역할</th><th style="width:24%">시작값</th><th>증상과 대처</th></tr></thead>
+<tbody>
+<tr><td><code>lr</code></td><td>한 걸음의 보폭 α</td><td><code>0.1</code> (표준화 후)</td><td>손실이 <b>치솟거나 nan</b> → 10분의 1로. 손실이 <b>거의 안 줄어듦</b> → 10배로</td></tr>
+<tr><td><code>epochs</code></td><td>전체 데이터 반복 횟수</td><td><code>1000</code> ~ <code>3000</code></td><td>학습 곡선 끝이 아직 <b>가파르면</b> 늘린다. 이미 <b>평평하면</b> 낭비</td></tr>
+<tr><td><code>batch_size</code></td><td><code>None</code>=배치 · <code>32</code>=미니배치 · <code>1</code>=SGD</td><td><code>None</code> (데이터가 작으면)</td><td>데이터가 수십만 행이면 <code>32</code>~<code>256</code></td></tr>
+<tr><td><code>l2</code></td><td>Ridge 규제 — 계수를 축소</td><td><code>0</code> → <code>0.001</code> → <code>0.01</code></td><td>과적합(train ≫ test)일 때 키운다</td></tr>
+<tr><td><code>l1</code></td><td>Lasso 규제 — 계수를 0으로</td><td><code>0</code></td><td>변수 선택 효과가 필요할 때만</td></tr>
+<tr><td><code>tol</code></td><td>조기 종료 기준</td><td><code>None</code> 또는 <code>1e-7</code></td><td>손실 개선폭이 이보다 작으면 중단</td></tr>
+</tbody>
+</table>
+
+<p class="cat-note">실제 측정값입니다. diabetes 데이터를 <code>StandardScaler</code>로 표준화한 뒤 <code>GDRegressor(epochs=800)</code>로 돌린 결과입니다.</p>
+<table>
+<thead><tr><th style="width:14%"><code>lr</code></th><th style="width:20%">최종 손실</th><th style="width:16%">R²</th><th>판정</th></tr></thead>
+<tbody>
+<tr><td><code>0.001</code></td><td>3876.5</td><td>0.3463</td><td>너무 작음 — 800 epoch로는 한참 부족</td></tr>
+<tr><td><code>0.01</code></td><td>2876.8</td><td>0.5149</td><td>아직 내려가는 중 — epochs를 늘리면 더 좋아짐</td></tr>
+<tr><td><code>0.1</code></td><td><b>2861.1</b></td><td><b>0.5175</b></td><td><b>적절</b> — 정규방정식 해(0.517748)에 도달</td></tr>
+<tr><td><code>0.5</code></td><td colspan="2">발산 (epoch 314)</td><td>너무 큼</td></tr>
+<tr><td><code>0.9</code></td><td colspan="2">발산 (epoch 190)</td><td>너무 큼</td></tr>
+</tbody>
+</table>
+
+<div class="callout good">
+  <b>검증 결과 — sklearn과 대조</b>
+  같은 조건에서 sklearn 구현과 맞춰봤습니다.
+  <ul>
+    <li><b>회귀</b>: <code>LinearRegression</code>과 R² 일치 (0.517748 / 0.517748, diabetes 데이터)</li>
+    <li><b>Ridge</b>: <code>l2 = alpha / n_samples</code>로 맞추면 계수 최대차이 <b>0.00000</b></li>
+    <li><b>분류</b>: <code>l2 = 1/(2·C·n)</code>로 맞추면 <code>LogisticRegression</code>과 계수 상관 <b>0.99992</b>, 정확도·AUC 완전 일치 (breast_cancer 데이터)</li>
+    <li><code>is_regressor</code> / <code>is_classifier</code> 판정 통과 → 모든 <code>scoring</code> 문자열이 정상 동작</li>
+  </ul>
+</div>
+
+<h3 class="cat">4. 전체 코드</h3>
+<pre class="block"><code><span class="cmt">"""gd_from_scratch.py — 경사하강법 직접 구현 (sklearn 호환)"""</span>
+from __future__ import annotations
+import numpy as np
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from sklearn.utils.multiclass import unique_labels
+from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
+
+
+class _GDBase(BaseEstimator):
+    <span class="cmt">"""GDRegressor / GDClassifier가 공유하는 학습 루프."""</span>
+
+    def __init__(self, lr=0.05, epochs=1000, batch_size=None, l1=0.0, l2=0.0,
+                 shuffle=True, tol=None, random_state=None, verbose=0):
+        self.lr = lr                    <span class="cmt"># 학습률 α — 한 걸음의 보폭</span>
+        self.epochs = epochs            <span class="cmt"># 전체 데이터를 몇 번 반복할지</span>
+        self.batch_size = batch_size    <span class="cmt"># None=배치GD, 1=SGD, n=미니배치GD</span>
+        self.l1 = l1                    <span class="cmt"># L1(Lasso) 규제 — 계수를 0으로</span>
+        self.l2 = l2                    <span class="cmt"># L2(Ridge) 규제 — 계수를 축소</span>
+        self.shuffle = shuffle
+        self.tol = tol                  <span class="cmt"># 개선폭이 이보다 작으면 조기 종료</span>
+        self.random_state = random_state
+        self.verbose = verbose
+
+    def _penalty(self, W):
+        p = 0.0
+        if self.l2: p += self.l2 * float((W ** 2).sum())
+        if self.l1: p += self.l1 * float(np.abs(W).sum())
+        return p
+
+    def _fit_gd(self, X, y):
+        n, p = X.shape
+        rng = np.random.default_rng(self.random_state)
+        W = np.zeros((p, 1))
+        b = np.zeros((1, 1))
+        bs = n if self.batch_size is None else min(int(self.batch_size), n)
+        self.loss_history_, prev = [], np.inf
+
+        with np.errstate(over='ignore', invalid='ignore'):
+            for ep in range(self.epochs):
+                idx = rng.permutation(n) if self.shuffle else np.arange(n)
+
+                for s in range(0, n, bs):
+                    j = idx[s:s + bs]
+                    Xb, yb = X[j], y[j]
+                    N = len(j)
+
+                    <span class="cmt"># 1) 순전파 — 현재 파라미터로 예측하고 오차를 잰다</span>
+                    resid = yb - self._activation(Xb @ W + b)      <span class="cmt"># (N, 1)</span>
+
+                    <span class="cmt"># 2) 기울기 — 손실이 커지는 방향</span>
+                    gW = -(self._grad_scale / N) * (Xb.T @ resid)
+                    gb = -(self._grad_scale / N) * resid.sum(keepdims=True)
+
+                    <span class="cmt"># 3) 규제항의 기울기 (편향 b에는 걸지 않는다)</span>
+                    if self.l2: gW += 2 * self.l2 * W
+                    if self.l1: gW += self.l1 * np.sign(W)
+
+                    <span class="cmt"># 4) 하강 — 기울기의 '반대' 방향으로 한 걸음</span>
+                    W -= self.lr * gW
+                    b -= self.lr * gb
+
+                loss = self._data_loss(X, y, W, b) + self._penalty(W)
+                self.loss_history_.append(loss)
+
+                if not np.isfinite(loss):
+                    raise FloatingPointError(
+                        f'발산했습니다 (epoch {ep}). lr={self.lr}이 너무 큽니다. '
+                        f'10분의 1로 줄이거나 StandardScaler를 앞에 붙이세요.')
+                if self.verbose and ep % max(1, self.epochs // 10) == 0:
+                    print(f'epoch {ep:5d}  loss {loss:.6f}')
+                if self.tol is not None and abs(prev - loss) &lt; self.tol:
+                    break
+                prev = loss
+
+        self.coef_ = W.ravel()
+        self.intercept_ = float(b[0, 0])
+        self.n_iter_ = len(self.loss_history_)
+        self.n_features_in_ = p
+        return self
+
+
+class GDRegressor(RegressorMixin, _GDBase):
+    <span class="cmt"># ★ 믹스인이 반드시 앞에 와야 한다. 뒤에 두면 MRO상 BaseEstimator의
+    #   __sklearn_tags__가 이겨서 sklearn이 회귀기로 인식하지 못하고,
+    #   cross_val_score의 scoring이 조용히 nan을 반환한다.</span>
+    _grad_scale = 2.0        <span class="cmt"># MSE 미분 계수: dJ/dW = -(2/N)·Xᵀ(y-ŷ)</span>
+
+    def _activation(self, z):
+        return z             <span class="cmt"># 항등 — 선형 회귀</span>
+
+    def _data_loss(self, X, y, W, b):
+        return float(((y - (X @ W + b)) ** 2).mean())
+
+    def fit(self, X, y):
+        X, y = check_X_y(X, y, y_numeric=True)
+        return self._fit_gd(X, y.reshape(-1, 1))
+
+    def predict(self, X):
+        check_is_fitted(self)
+        return check_array(X) @ self.coef_ + self.intercept_
+
+
+class GDClassifier(ClassifierMixin, _GDBase):
+    <span class="cmt">"""경사하강법 로지스틱 회귀 (이진 분류)."""</span>
+    _grad_scale = 1.0        <span class="cmt"># 로그손실 미분: dJ/dW = -(1/N)·Xᵀ(y-ŷ)</span>
+
+    @staticmethod
+    def _sigmoid(z):
+        <span class="cmt"># z가 크게 음수일 때 exp 오버플로를 피하는 안정적인 형태</span>
+        out = np.empty_like(z, dtype=float)
+        pos, neg = z &gt;= 0, z &lt; 0
+        out[pos] = 1.0 / (1.0 + np.exp(-z[pos]))
+        ez = np.exp(z[neg])
+        out[neg] = ez / (1.0 + ez)
+        return out
+
+    def _activation(self, z):
+        return self._sigmoid(z)
+
+    def _data_loss(self, X, y, W, b):
+        p = np.clip(self._sigmoid(X @ W + b), 1e-12, 1 - 1e-12)
+        return float(-(y * np.log(p) + (1 - y) * np.log(1 - p)).mean())
+
+    def fit(self, X, y):
+        X, y = check_X_y(X, y)
+        self.classes_ = unique_labels(y)
+        if len(self.classes_) != 2:
+            raise ValueError(f'이진 분류만 지원합니다. 클래스 {len(self.classes_)}개.')
+        y01 = (y == self.classes_[1]).astype(float).reshape(-1, 1)
+        return self._fit_gd(X, y01)
+
+    def decision_function(self, X):
+        check_is_fitted(self)
+        return check_array(X) @ self.coef_ + self.intercept_
+
+    def predict_proba(self, X):
+        p1 = self._sigmoid(self.decision_function(X).reshape(-1, 1)).ravel()
+        return np.column_stack([1 - p1, p1])
+
+    def predict(self, X):
+        return self.classes_[(self.decision_function(X) &gt;= 0).astype(int)]
+
+
+def plot_loss(model, ax=None, logy=True):
+    <span class="cmt">"""학습 곡선. 내려가다 평평 = 정상 / 계속 가파름 = epochs 부족 / 치솟음 = lr 과대"""</span>
+    import matplotlib.pyplot as plt
+    check_is_fitted(model)
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 4))
+    ax.plot(model.loss_history_, lw=1.5)
+    if logy: ax.set_yscale('log')
+    ax.set_xlabel('epoch'); ax.set_ylabel('loss')
+    ax.set_title(f'{type(model).__name__}  lr={model.lr}  '
+                 f'final={model.loss_history_[-1]:.6g}')
+    ax.grid(alpha=.3)
+    return ax</code></pre>
+
+<div class="callout warn">
+  <b>학습 곡선 읽는 법</b>
+  <ul>
+    <li><b>내려가다 평평해짐</b> → 정상 수렴. 여기서 멈춰도 됩니다.</li>
+    <li><b>끝까지 가파르게 내려감</b> → 아직 덜 배웠습니다. <code>epochs</code>를 늘리세요.</li>
+    <li><b>들쭉날쭉 튐</b> → <code>lr</code>이 큽니다. 최저점을 지나쳐 왔다갔다 하는 중입니다.</li>
+    <li><b>위로 치솟거나 nan</b> → 발산. <code>lr</code>을 10분의 1로, 그리고 <code>StandardScaler</code>가 앞에 있는지 확인하세요.</li>
+    <li><b>처음부터 거의 안 움직임</b> → <code>lr</code>이 너무 작습니다. 10배로.</li>
+  </ul>
+</div>
+
+<div class="callout bad">
+  <b>실무에서는 이걸 쓰지 마세요</b>
+  이 구현은 <b>원리를 이해하고 확인하기 위한 것</b>입니다. 실제 문제에서는 <code>LinearRegression</code>(정규방정식으로 한 번에 정확히 품), <code>Ridge</code>/<code>Lasso</code>, 대용량이면 <code>SGDRegressor</code>/<code>SGDClassifier</code>를 쓰세요. sklearn 구현은 학습률 자동 조정, 조기 종료, 희소행렬 지원이 들어 있어 더 빠르고 안정적입니다.
+</div>
+</section>
+
+</div>
+
+<div id="basket">
+  <div class="bh"><span>선택 항목 <span id="bn">0</span>개</span><button class="x" id="bx">✕</button></div>
+  <pre id="bp"></pre>
+  <div class="bf">
+    <button class="btn primary" id="bc" style="flex:1">클립보드로 복사</button>
+    <button class="btn" id="bd">.py로 저장</button>
+  </div>
+</div>
+
+<script>
+const D=[
+{g:'prep',cat:'데이터셋 · 분할',note:'분할은 모든 전처리보다 먼저 와야 합니다. 여기서 순서를 틀리면 뒤가 전부 무의미해집니다.',items:[
+ {n:'load_* 내장 데이터',d:'연습용 데이터. as_frame=True면 DataFrame으로 받는다',c:"from sklearn.datasets import load_breast_cancer, load_diabetes, load_iris, load_wine\nX, y = load_breast_cancer(return_X_y=True, as_frame=True)\nd = load_breast_cancer()\nd.feature_names, d.target_names, d.DESCR"},
+ {n:'make_* 가상 데이터',d:'조건을 지정한 실험용 데이터 생성. 알고리즘 검증에 유용',c:"from sklearn.datasets import make_classification, make_regression, make_blobs\nX, y = make_classification(n_samples=1000, n_features=20, n_informative=5,\n                           weights=[.95, .05],   # 불균형 데이터 만들기\n                           random_state=42)"},
+ {n:'fetch_openml',d:'외부 데이터셋. 캐시되며 as_frame 권장',c:"from sklearn.datasets import fetch_openml\nX, y = fetch_openml('boston', version=1, as_frame=True, return_X_y=True)"},
+ {n:'train_test_split',h:1,d:'가장 먼저 하는 일. stratify와 random_state는 사실상 필수',c:"from sklearn.model_selection import train_test_split\nX_tr, X_te, y_tr, y_te = train_test_split(\n    X, y, test_size=0.2,\n    stratify=y,          # 분류: 클래스 비율 유지\n    random_state=42)     # 재현성 — 없으면 매번 결과가 달라진다\n\n# 검증셋까지 3분할하려면 두 번 나눈다\nX_tr, X_tmp, y_tr, y_tmp = train_test_split(X, y, test_size=.3, stratify=y, random_state=42)\nX_va, X_te, y_va, y_te = train_test_split(X_tmp, y_tmp, test_size=.5, stratify=y_tmp, random_state=42)"},
+ {n:'StratifiedKFold',h:1,d:'분류 교차검증의 기본. 각 fold의 클래스 비율을 유지',c:"from sklearn.model_selection import StratifiedKFold\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nfor tr, te in cv.split(X, y):\n    ...   # X.iloc[tr] 처럼 인덱스로 접근"},
+ {n:'KFold',h:1,d:'회귀 교차검증. shuffle=True를 빼면 데이터 순서에 결과가 좌우됨',c:"from sklearn.model_selection import KFold\ncv = KFold(n_splits=5, shuffle=True, random_state=42)"},
+ {n:'TimeSeriesSplit',h:1,d:'시계열 전용. 항상 과거로 학습해 미래를 검증 — 미래 정보 누수 차단',c:"from sklearn.model_selection import TimeSeriesSplit\ncv = TimeSeriesSplit(n_splits=5, test_size=30, gap=7)\n# 시계열에 KFold(shuffle=True)를 쓰면 미래로 과거를 예측하게 되어 점수가 부풀려진다"},
+ {n:'GroupKFold',h:1,d:'같은 사람·기기의 데이터가 train과 test에 나뉘어 들어가는 것을 방지',c:"from sklearn.model_selection import GroupKFold, StratifiedGroupKFold\ncv = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)\ncross_val_score(pipe, X, y, groups=df.patient_id, cv=cv)"},
+ {n:'ShuffleSplit',d:'반복 랜덤 분할. fold보다 반복 횟수를 자유롭게',c:"from sklearn.model_selection import StratifiedShuffleSplit\ncv = StratifiedShuffleSplit(n_splits=10, test_size=.2, random_state=42)"},
+]},
+{g:'prep',cat:'전처리 — 스케일링',note:'경사하강법·거리 기반(KNN, SVM)·규제 모델은 스케일링이 필수입니다. 트리 계열은 필요 없습니다.',items:[
+ {n:'StandardScaler',h:1,d:'평균 0, 표준편차 1. 기본값으로 무난',c:"from sklearn.preprocessing import StandardScaler\nsc = StandardScaler()\nX_tr_s = sc.fit_transform(X_tr)   # train에서만 fit\nX_te_s = sc.transform(X_te)       # test는 transform만 — fit 금지\nsc.mean_, sc.scale_"},
+ {n:'MinMaxScaler',h:1,d:'0~1로 압축. 신경망 입력·이미지. 이상치에 매우 취약',c:"from sklearn.preprocessing import MinMaxScaler\nMinMaxScaler(feature_range=(0, 1)).fit_transform(X_tr)"},
+ {n:'RobustScaler',h:1,d:'중앙값 0, IQR 1. 이상치가 있으면 이걸 쓴다',c:"from sklearn.preprocessing import RobustScaler\nRobustScaler(quantile_range=(25.0, 75.0)).fit_transform(X_tr)\n# 이상치를 제거하는 게 아니라, 나머지 값들이 이상치에 짓눌리지 않게 해준다"},
+ {n:'MaxAbsScaler',d:'-1~1. 0을 0으로 보존해 희소행렬에 적합',c:"from sklearn.preprocessing import MaxAbsScaler\nMaxAbsScaler().fit_transform(X_tr)"},
+ {n:'Normalizer',d:'행 단위 정규화. 위 4개와 방향이 다르다 (샘플별 크기 1)',c:"from sklearn.preprocessing import Normalizer\nNormalizer(norm='l2').transform(X)   # stateless — fit이 필요 없다"},
+ {n:'PowerTransformer',h:1,d:'치우친 분포를 정규분포에 가깝게. 회귀 성능이 오를 때가 많음',c:"from sklearn.preprocessing import PowerTransformer\nPowerTransformer(method='yeo-johnson').fit_transform(X_tr)  # 음수 허용\n# box-cox는 양수만 가능"},
+ {n:'QuantileTransformer',d:'순위 기반 강제 변환. 이상치에 가장 강하지만 값의 의미가 사라짐',c:"from sklearn.preprocessing import QuantileTransformer\nQuantileTransformer(output_distribution='normal', random_state=42).fit_transform(X_tr)"},
+]},
+{g:'prep',cat:'전처리 — 인코딩',note:'LabelEncoder는 y 전용입니다. X에 쓰면 순서가 없는 범주에 크기 관계를 만들어냅니다.',items:[
+ {n:'OneHotEncoder',h:1,d:'범주 → 이진 열. handle_unknown이 실무 핵심',c:"from sklearn.preprocessing import OneHotEncoder\noh = OneHotEncoder(\n    handle_unknown='ignore',   # test에 없던 범주가 나와도 에러 대신 전부 0\n    drop='if_binary',          # 2범주면 열 1개만 (다중공선성 완화)\n    sparse_output=False,\n    min_frequency=10)          # 희귀 범주는 infrequent로 묶기\noh.fit_transform(X_tr[['city']])\noh.get_feature_names_out()     # 변환 후 열 이름"},
+ {n:'OrdinalEncoder',h:1,d:'범주 → 정수. 순서가 있는 범주 또는 트리 모델에만',c:"from sklearn.preprocessing import OrdinalEncoder\nOrdinalEncoder(\n    categories=[['하','중','상']],        # 순서 직접 지정\n    handle_unknown='use_encoded_value',\n    unknown_value=-1).fit_transform(X_tr[['grade']])"},
+ {n:'LabelEncoder',h:1,d:'y(타깃) 전용. X에는 쓰지 말 것',t:'warn',c:"from sklearn.preprocessing import LabelEncoder\nle = LabelEncoder()\ny_enc = le.fit_transform(y)      # ['a','b'] -> [0,1]\nle.inverse_transform(pred)       # 예측 결과를 원래 라벨로\n# X에 쓰면 '서울=0, 부산=1, 대구=2'가 되어 크기 관계가 생긴다"},
+ {n:'TargetEncoder',h:1,d:'범주를 타깃 평균으로. 고차원 범주에 강력하지만 누수 위험',c:"from sklearn.preprocessing import TargetEncoder\n# 내부적으로 교차적합을 해서 누수를 막아준다. 반드시 Pipeline 안에서 쓸 것\nTargetEncoder(smooth='auto', random_state=42).fit_transform(X_tr[['city']], y_tr)"},
+ {n:'get_dummies 대신 OneHotEncoder',h:1,d:'pandas로 인코딩하면 train/test 열이 어긋난다',t:'warn',c:"# 위험: test에만 있는 범주 / train에만 있는 범주 때문에 열 개수가 달라진다\npd.get_dummies(X_tr); pd.get_dummies(X_te)\n# 안전: fit한 범주를 기억하므로 항상 같은 열이 나온다\nOneHotEncoder(handle_unknown='ignore').fit(X_tr)"},
+ {n:'범주 자동 선택',h:1,d:'dtype으로 수치/범주 열을 자동 분리',c:"from sklearn.compose import make_column_selector as selector\nnum = selector(dtype_include='number')\ncat = selector(dtype_include=['object', 'category'])"},
+]},
+{g:'prep',cat:'전처리 — 결측 · 변환',note:'',items:[
+ {n:'SimpleImputer',h:1,d:'단순 대체. Pipeline 안에서 써야 fold별로 올바르게 계산됨',c:"from sklearn.impute import SimpleImputer\nSimpleImputer(strategy='median')          # 수치형 — 이상치에 강함\nSimpleImputer(strategy='most_frequent')   # 범주형\nSimpleImputer(strategy='constant', fill_value='미상')\nSimpleImputer(strategy='median', add_indicator=True)  # 결측이었음을 열로 남김"},
+ {n:'KNNImputer',d:'비슷한 행의 값으로 대체. 느리지만 정확도가 높을 때가 있음',c:"from sklearn.impute import KNNImputer\nKNNImputer(n_neighbors=5, weights='distance').fit_transform(X_tr)\n# 거리 기반이므로 스케일링을 먼저 해야 한다"},
+ {n:'IterativeImputer',d:'다른 열로 회귀해 결측 예측. 실험적 기능이라 명시적 import 필요',c:"from sklearn.experimental import enable_iterative_imputer  # noqa — 이 줄이 먼저\nfrom sklearn.impute import IterativeImputer\nIterativeImputer(max_iter=10, random_state=42).fit_transform(X_tr)"},
+ {n:'KBinsDiscretizer',d:'수치 → 구간. quantile_method를 명시하지 않으면 경고 발생',c:"from sklearn.preprocessing import KBinsDiscretizer\nKBinsDiscretizer(n_bins=5, encode='ordinal', strategy='quantile',\n                 quantile_method='averaged_inverted_cdf').fit_transform(X_tr)"},
+ {n:'PolynomialFeatures',h:1,d:'다항·교호작용 항 생성. 선형 모델로 곡선을 잡는 방법',c:"from sklearn.preprocessing import PolynomialFeatures\nPolynomialFeatures(degree=2, include_bias=False).fit_transform(X_tr)\nPolynomialFeatures(2, interaction_only=True)   # 교호작용만 (제곱항 제외)\n# 열이 급격히 늘어난다: 10개 -> 65개. 반드시 규제 모델과 함께"},
+ {n:'FunctionTransformer',h:1,d:'임의 함수를 Pipeline에 넣기. 로그 변환 등',c:"from sklearn.preprocessing import FunctionTransformer\nlog_tf = FunctionTransformer(np.log1p, inverse_func=np.expm1,\n                             feature_names_out='one-to-one')\nlog_tf.fit_transform(X_tr)"},
+ {n:'TransformedTargetRegressor',h:1,d:'타깃을 변환해 학습하고 예측은 원래 단위로 되돌림',c:"from sklearn.compose import TransformedTargetRegressor\n# 가격처럼 오른쪽으로 치우친 타깃에 효과적\nTransformedTargetRegressor(regressor=Ridge(), func=np.log1p, inverse_func=np.expm1)"},
+]},
+{g:'prep',cat:'Pipeline · ColumnTransformer',note:'데이터 누수를 "조심해서" 막는 게 아니라 "구조적으로 불가능하게" 만드는 도구입니다.',items:[
+ {n:'Pipeline',h:1,d:'전처리 + 모델을 하나로. 이름을 붙이면 튜닝에서 참조하기 쉬움',c:"from sklearn.pipeline import Pipeline\npipe = Pipeline([\n    ('imputer', SimpleImputer(strategy='median')),\n    ('scaler',  StandardScaler()),\n    ('model',   LogisticRegression(max_iter=1000)),\n])\npipe.fit(X_tr, y_tr)\npipe.named_steps['model'].coef_\npipe[:-1].transform(X_tr)      # 모델 직전까지의 변환 결과 보기"},
+ {n:'make_pipeline',h:1,d:'이름 자동 생성(소문자 클래스명). 튜닝 키는 model__param 형태',c:"from sklearn.pipeline import make_pipeline\npipe = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))\n# 파라미터 이름: 'logisticregression__C'"},
+ {n:'ColumnTransformer',h:1,d:'열 종류별로 다른 전처리. 실무 파이프라인의 중심',c:"from sklearn.compose import ColumnTransformer\nnum_pipe = Pipeline([('imp', SimpleImputer(strategy='median')),\n                     ('sc',  StandardScaler())])\ncat_pipe = Pipeline([('imp', SimpleImputer(strategy='most_frequent')),\n                     ('oh',  OneHotEncoder(handle_unknown='ignore'))])\npre = ColumnTransformer([\n    ('num', num_pipe, num_cols),\n    ('cat', cat_pipe, cat_cols),\n], remainder='drop')      # 명시 안 한 열은 버림 ('passthrough'면 그대로 통과)"},
+ {n:'make_column_selector',h:1,d:'열 목록을 하드코딩하지 않고 dtype으로 자동 선택',c:"from sklearn.compose import ColumnTransformer, make_column_selector as selector\npre = ColumnTransformer([\n    ('num', StandardScaler(),                        selector(dtype_include='number')),\n    ('cat', OneHotEncoder(handle_unknown='ignore'),  selector(dtype_include=object)),\n])"},
+ {n:'get_feature_names_out',h:1,d:'변환 후 열 이름 복원. 계수 해석에 필수',c:"pipe.fit(X_tr, y_tr)\nnames = pipe[:-1].get_feature_names_out()\npd.Series(pipe[-1].coef_[0], index=names).sort_values()"},
+ {n:"set_output(transform='pandas')",h:1,d:'변환 결과를 DataFrame으로. 디버깅이 훨씬 쉬워짐',c:"from sklearn import set_config\nset_config(transform_output='pandas')     # 전역 설정\nStandardScaler().set_output(transform='pandas').fit_transform(X_tr)  # 개별 설정"},
+ {n:"set_config(display='diagram')",d:'주피터에서 파이프라인 구조를 그림으로 표시',c:"from sklearn import set_config\nset_config(display='diagram')\npipe    # 셀에서 실행하면 클릭 가능한 다이어그램이 나온다"},
+ {n:'passthrough',d:'단계를 비활성화. 튜닝에서 "이 단계를 쓸까 말까"를 탐색',c:"pipe = Pipeline([('reduce', PCA()), ('model', LogisticRegression())])\nGridSearchCV(pipe, {'reduce': [PCA(5), SelectKBest(k=5), 'passthrough']})"},
+ {n:'FeatureUnion',d:'여러 변환 결과를 옆으로 이어붙임',c:"from sklearn.pipeline import FeatureUnion\nFeatureUnion([('pca', PCA(3)), ('kbest', SelectKBest(k=5))])"},
+]},
+{g:'prep',cat:'특징 선택 · 차원 축소',note:'선택은 원본 열을 남기고(해석 가능), 축소는 새 축을 만듭니다(해석 불가).',items:[
+ {n:'SelectKBest',h:1,d:'점수 상위 k개 선택. 변수를 하나씩 채점해 중복을 못 거른다',t:'warn',c:"from sklearn.feature_selection import SelectKBest, f_classif, f_regression, mutual_info_classif\nsel = SelectKBest(score_func=f_classif, k=10)       # 분류 (선형 관계)\nSelectKBest(f_regression, k=10)                     # 회귀\nSelectKBest(mutual_info_classif, k=10)              # 비선형 관계도 포착\nsel.fit_transform(X_tr, y_tr)\nX.columns[sel.get_support()]                        # 선택된 열 이름"},
+ {n:'SelectFromModel',h:1,d:'모델이 중요하다고 본 변수만. 중복 변수를 SelectKBest보다 잘 거른다',c:"from sklearn.feature_selection import SelectFromModel\nSelectFromModel(RandomForestClassifier(n_estimators=200, random_state=42),\n                threshold='median').fit_transform(X_tr, y_tr)\nSelectFromModel(Lasso(alpha=.01), prefit=False)     # L1으로 0이 된 변수 제거"},
+ {n:'RFE / RFECV',h:1,d:'하나씩 제거하며 재학습. 느리지만 성능이 좋다. RFECV는 개수도 자동',c:"from sklearn.feature_selection import RFE, RFECV\nRFE(LogisticRegression(max_iter=2000), n_features_to_select=10, step=1)\nr = RFECV(LogisticRegression(max_iter=2000), cv=5, step=5, scoring='roc_auc').fit(X_tr_s, y_tr)\nr.n_features_, r.support_"},
+ {n:'VarianceThreshold',d:'값이 거의 변하지 않는 열 제거. 가장 먼저 거르는 필터',c:"from sklearn.feature_selection import VarianceThreshold\nVarianceThreshold(threshold=0.0).fit_transform(X)   # 상수 열 제거"},
+ {n:'PCA',h:1,d:'분산이 큰 방향으로 새 축 생성. 반드시 스케일링 먼저',c:"from sklearn.decomposition import PCA\np = PCA(n_components=0.95).fit(X_tr_s)   # 분산 95%를 남기는 최소 개수 자동\np.n_components_\np.explained_variance_ratio_.cumsum()     # 누적 설명력\np.components_                            # 각 주성분의 원본 변수 가중치"},
+ {n:'PCA 개수 정하기',h:1,d:'누적 설명력 그래프의 팔꿈치를 찾는다',c:"import matplotlib.pyplot as plt\nevr = PCA().fit(X_tr_s).explained_variance_ratio_\nplt.plot(range(1, len(evr)+1), evr.cumsum(), marker='o')\nplt.axhline(.95, ls='--', c='r'); plt.xlabel('n_components'); plt.ylabel('누적 설명력')"},
+ {n:'TruncatedSVD',d:'희소행렬용 PCA. TF-IDF 결과 축소에 사용 (LSA)',c:"from sklearn.decomposition import TruncatedSVD\nTruncatedSVD(n_components=100, random_state=42).fit_transform(tfidf_matrix)"},
+]},
+{g:'model',cat:'회귀 모델',note:'규제가 있는 모델(Ridge, Lasso, ElasticNet)은 반드시 스케일링이 필요합니다.',items:[
+ {n:'LinearRegression',h:1,d:'정규방정식으로 한 번에 정확히 푼다. 기준선(baseline)으로 항상 먼저',c:"from sklearn.linear_model import LinearRegression\nm = LinearRegression().fit(X_tr, y_tr)\nm.coef_, m.intercept_\npd.Series(m.coef_, index=X.columns).sort_values()"},
+ {n:'Ridge',h:1,d:'L2 규제. 계수를 0 쪽으로 축소해 과적합 억제. 변수는 안 없앤다',c:"from sklearn.linear_model import Ridge, RidgeCV\nRidge(alpha=1.0)\n# alpha를 CV로 자동 선택 (가장 편함)\nr = RidgeCV(alphas=np.logspace(-3, 3, 13)).fit(X_tr_s, y_tr)\nr.alpha_"},
+ {n:'Lasso',h:1,d:'L1 규제. 계수를 아예 0으로 만들어 변수 선택 효과',c:"from sklearn.linear_model import Lasso, LassoCV\nl = LassoCV(cv=5, random_state=42, max_iter=5000).fit(X_tr_s, y_tr)\nl.alpha_\nX.columns[l.coef_ != 0]      # 살아남은 변수"},
+ {n:'ElasticNet',d:'L1 + L2 혼합. l1_ratio로 비율 조절',c:"from sklearn.linear_model import ElasticNet, ElasticNetCV\nElasticNetCV(l1_ratio=[.1,.5,.7,.9,.95,1], cv=5, random_state=42)"},
+ {n:'SGDRegressor',h:1,d:'경사하강법 기반. 데이터가 아주 클 때. 스케일링 필수',c:"from sklearn.linear_model import SGDRegressor\nSGDRegressor(loss='squared_error', penalty='l2', alpha=1e-4,\n             learning_rate='adaptive', eta0=.01,\n             max_iter=1000, tol=1e-3, early_stopping=True, random_state=42)"},
+ {n:'HuberRegressor',d:'이상치에 강한 회귀. 큰 오차에 제곱 대신 선형 벌점',c:"from sklearn.linear_model import HuberRegressor\nHuberRegressor(epsilon=1.35).fit(X_tr_s, y_tr)"},
+ {n:'다항 회귀',h:1,d:'곡선 관계를 선형 모델로. 차수를 CV로 정한다',c:"poly = make_pipeline(PolynomialFeatures(2, include_bias=False),\n                     StandardScaler(), Ridge(alpha=1.0))\nGridSearchCV(poly, {'polynomialfeatures__degree':[1,2,3], 'ridge__alpha':[.1,1,10]}, cv=5)"},
+ {n:'RandomForestRegressor',h:1,d:'스케일링 불필요, 비선형 자동 포착. 강력한 기본 선택',c:"from sklearn.ensemble import RandomForestRegressor\nRandomForestRegressor(n_estimators=300, max_depth=None,\n                      min_samples_leaf=2, n_jobs=-1, random_state=42)"},
+ {n:'HistGradientBoostingRegressor',h:1,d:'대용량에 빠르고 강함. 결측치를 그대로 받는다',c:"from sklearn.ensemble import HistGradientBoostingRegressor\nHistGradientBoostingRegressor(max_iter=500, learning_rate=.05,\n                              early_stopping=True, random_state=42)\n# 결측치 대체(imputer) 없이도 동작한다"},
+]},
+{g:'model',cat:'분류 모델',note:'',items:[
+ {n:'LogisticRegression',h:1,d:'분류의 기준선. 해석 가능하고 확률이 잘 맞는다',c:"from sklearn.linear_model import LogisticRegression\nLogisticRegression(\n    C=1.0,                    # 작을수록 규제 강함 (alpha의 역수)\n    penalty='l2',             # 'l1'은 solver='liblinear'/'saga'\n    class_weight='balanced',  # 불균형 데이터\n    max_iter=1000,\n    random_state=42)\n# solver 기본값 'lbfgs'가 대부분 빠르다. 'saga'는 L1/elasticnet/대용량일 때만"},
+ {n:'LogisticRegression 계수 해석',h:1,d:'exp(계수) = 오즈비. 스케일링 후에는 상대 중요도로 읽는다',c:"m = pipe.named_steps['logisticregression']\npd.Series(np.exp(m.coef_[0]), index=names).sort_values(ascending=False)\n# 오즈비 1.5 = 그 변수가 1 표준편차 늘 때 사건 발생 오즈가 1.5배"},
+ {n:'penalty=elasticnet',d:'L1+L2 혼합. l1_ratio는 이때만 유효하다',t:'warn',c:"LogisticRegression(penalty='elasticnet', solver='saga',\n                   l1_ratio=0.5, max_iter=5000)\n# penalty='l2'인데 l1_ratio를 주면 무시되고 UserWarning만 뜬다"},
+ {n:'SGDClassifier',d:'대용량 선형 분류. loss로 모델 종류가 바뀐다',c:"from sklearn.linear_model import SGDClassifier\nSGDClassifier(loss='log_loss')    # 로지스틱 회귀\nSGDClassifier(loss='hinge')       # 선형 SVM"},
+ {n:'SVC / LinearSVC',d:'서포트 벡터 머신. 스케일링 필수, 대용량엔 느림',c:"from sklearn.svm import SVC, LinearSVC\nSVC(kernel='rbf', C=1.0, gamma='scale', probability=True, random_state=42)\nLinearSVC(C=1.0, max_iter=5000)   # 선형이고 데이터가 크면 이쪽이 훨씬 빠름"},
+ {n:'KNeighborsClassifier',d:'거리 기반. 스케일링 필수. 데이터가 크면 예측이 느림',c:"from sklearn.neighbors import KNeighborsClassifier\nKNeighborsClassifier(n_neighbors=5, weights='distance', n_jobs=-1)"},
+ {n:'GaussianNB / MultinomialNB',d:'나이브 베이즈. 빠르고 텍스트 분류에 강함',c:"from sklearn.naive_bayes import GaussianNB, MultinomialNB\nGaussianNB()                      # 연속형 피처\nMultinomialNB(alpha=1.0)          # 카운트/TF-IDF (음수 불가)"},
+]},
+{g:'model',cat:'트리 · 앙상블',note:'트리 계열은 스케일링이 필요 없습니다. 분할 기준이 크기가 아니라 순서이기 때문입니다.',items:[
+ {n:'DecisionTreeClassifier',h:1,d:'단독 성능은 약하지만 규칙을 눈으로 볼 수 있다',c:"from sklearn.tree import DecisionTreeClassifier, plot_tree, export_text\nt = DecisionTreeClassifier(max_depth=4, min_samples_leaf=20, random_state=42).fit(X_tr, y_tr)\nprint(export_text(t, feature_names=list(X.columns)))\nplot_tree(t, feature_names=X.columns, class_names=['음성','양성'], filled=True)"},
+ {n:'RandomForestClassifier',h:1,d:'가장 무난한 강력 모델. 튜닝 없이도 잘 나온다',c:"from sklearn.ensemble import RandomForestClassifier\nRandomForestClassifier(\n    n_estimators=300,      # 많을수록 좋고 과적합도 안 된다 (느려질 뿐)\n    max_depth=None,\n    min_samples_leaf=1,    # 과적합이면 2~5로 올린다\n    max_features='sqrt',\n    class_weight='balanced_subsample',\n    n_jobs=-1, random_state=42)"},
+ {n:'HistGradientBoosting',h:1,d:'sklearn 내장 부스팅. LightGBM급 속도, 결측치 자동 처리',c:"from sklearn.ensemble import HistGradientBoostingClassifier\nHistGradientBoostingClassifier(\n    max_iter=500, learning_rate=.05, max_leaf_nodes=31,\n    l2_regularization=1.0,\n    early_stopping=True, validation_fraction=.1,\n    categorical_features='from_dtype',   # category dtype을 그대로 처리\n    random_state=42)"},
+ {n:'GradientBoosting / AdaBoost',d:'전통적 부스팅. 느리므로 Hist 버전을 우선 고려',c:"from sklearn.ensemble import GradientBoostingClassifier, AdaBoostClassifier\nGradientBoostingClassifier(n_estimators=200, learning_rate=.1, max_depth=3, random_state=42)"},
+ {n:'ExtraTrees',d:'분할점도 무작위로. RandomForest보다 빠르고 분산이 낮다',c:"from sklearn.ensemble import ExtraTreesClassifier\nExtraTreesClassifier(n_estimators=300, n_jobs=-1, random_state=42)"},
+ {n:'VotingClassifier',h:1,d:'여러 모델의 투표. soft(확률 평균)가 보통 더 좋다',c:"from sklearn.ensemble import VotingClassifier\nVotingClassifier([\n    ('lr', make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000))),\n    ('rf', RandomForestClassifier(n_estimators=300, random_state=42)),\n    ('gb', HistGradientBoostingClassifier(random_state=42)),\n], voting='soft', weights=[1, 2, 2], n_jobs=-1)"},
+ {n:'StackingClassifier',d:'모델 예측을 다시 모델에 넣는다. 내부 CV로 누수 방지',c:"from sklearn.ensemble import StackingClassifier\nStackingClassifier(\n    estimators=[('rf', RandomForestClassifier(random_state=42)),\n                ('gb', HistGradientBoostingClassifier(random_state=42))],\n    final_estimator=LogisticRegression(max_iter=2000), cv=5)"},
+ {n:'feature_importances_',h:1,d:'트리의 변수 중요도. 고유값이 많은 변수를 과대평가하는 편향이 있다',t:'warn',c:"pd.Series(rf.feature_importances_, index=X.columns).nlargest(15).plot.barh()\n# 편향이 없는 대안은 permutation_importance"},
+]},
+{g:'model',cat:'군집 · 이상탐지',note:'정답(y)이 없는 비지도 학습입니다. 평가 지표도 다릅니다.',items:[
+ {n:'KMeans',h:1,d:'k개 중심으로 묶기. 스케일링 필수, k를 미리 정해야 함',c:"from sklearn.cluster import KMeans\nkm = KMeans(n_clusters=3, n_init=10, random_state=42).fit(X_s)\nkm.labels_, km.cluster_centers_, km.inertia_"},
+ {n:'k 정하기 — 엘보 + 실루엣',h:1,d:'inertia는 항상 감소하므로 실루엣을 같이 본다',c:"from sklearn.metrics import silhouette_score\nfor k in range(2, 9):\n    lab = KMeans(k, n_init=10, random_state=42).fit_predict(X_s)\n    print(k, f'실루엣={silhouette_score(X_s, lab):.3f}')   # 1에 가까울수록 좋음"},
+ {n:'DBSCAN',h:1,d:'밀도 기반. k가 필요 없고 이상치를 -1로 분리해준다',c:"from sklearn.cluster import DBSCAN\nlab = DBSCAN(eps=0.5, min_samples=5).fit_predict(X_s)\n(lab == -1).sum()      # 어느 군집에도 속하지 않은 이상치 개수"},
+ {n:'AgglomerativeClustering',d:'계층적 군집. 덴드로그램으로 구조를 볼 수 있다',c:"from sklearn.cluster import AgglomerativeClustering\nAgglomerativeClustering(n_clusters=3, linkage='ward').fit_predict(X_s)"},
+ {n:'IsolationForest',h:1,d:'이상탐지. 정답 없이 비정상 샘플을 찾는다',c:"from sklearn.ensemble import IsolationForest\niso = IsolationForest(contamination=.05, random_state=42).fit(X_s)\nX[iso.predict(X_s) == -1]      # 이상치로 판정된 행"},
+ {n:'LocalOutlierFactor',d:'국소 밀도 기반 이상탐지',c:"from sklearn.neighbors import LocalOutlierFactor\nLocalOutlierFactor(n_neighbors=20, contamination=.05).fit_predict(X_s)"},
+]},
+{g:'eval',cat:'교차검증 · 하이퍼파라미터 튜닝',note:'단일 split 점수는 우연입니다. 반드시 CV 평균 ± 표준편차로 비교하세요.',items:[
+ {n:'cross_val_score',h:1,d:'가장 빠른 성능 확인. Pipeline을 넣어야 누수가 없다',c:"from sklearn.model_selection import cross_val_score, StratifiedKFold\ncv = StratifiedKFold(5, shuffle=True, random_state=42)\ns = cross_val_score(pipe, X, y, cv=cv, scoring='roc_auc', n_jobs=-1)\nprint(f'{s.mean():.4f} ± {s.std():.4f}')"},
+ {n:'cross_validate',h:1,d:'여러 지표를 한 번에 + 학습 점수까지. 과적합 진단',c:"from sklearn.model_selection import cross_validate\nr = cross_validate(pipe, X, y, cv=cv,\n                   scoring=['roc_auc','f1','precision','recall'],\n                   return_train_score=True, n_jobs=-1)\npd.DataFrame(r).mean()\n# train_score ≫ test_score 이면 과적합"},
+ {n:'cross_val_predict',h:1,d:'모든 샘플의 out-of-fold 예측. 혼동행렬·보정 곡선용',c:"from sklearn.model_selection import cross_val_predict\nproba = cross_val_predict(pipe, X, y, cv=cv, method='predict_proba')[:, 1]\nconfusion_matrix(y, (proba > .5).astype(int))"},
+ {n:'GridSearchCV',h:1,d:'전수 탐색. 후보가 적을 때',c:"from sklearn.model_selection import GridSearchCV\ngs = GridSearchCV(pipe,\n    {'model__C': [.01, .1, 1, 10],\n     'model__class_weight': [None, 'balanced']},\n    cv=cv, scoring='roc_auc', n_jobs=-1, refit=True,\n    return_train_score=True)\ngs.fit(X_tr, y_tr)\ngs.best_params_, gs.best_score_, gs.best_estimator_\npd.DataFrame(gs.cv_results_).sort_values('rank_test_score').head()"},
+ {n:'RandomizedSearchCV',h:1,d:'무작위 탐색. 후보가 많으면 Grid보다 훨씬 효율적',c:"from sklearn.model_selection import RandomizedSearchCV\nfrom scipy.stats import loguniform, randint, uniform\nRandomizedSearchCV(pipe,\n    {'model__C': loguniform(1e-3, 1e2),\n     'model__max_depth': randint(3, 20)},\n    n_iter=50, cv=cv, scoring='roc_auc', n_jobs=-1, random_state=42)"},
+ {n:'HalvingGridSearchCV',d:'적은 데이터로 걸러내며 후보를 줄여간다. 실험적 기능',c:"from sklearn.experimental import enable_halving_search_cv  # noqa — 이 줄이 먼저\nfrom sklearn.model_selection import HalvingGridSearchCV\nHalvingGridSearchCV(pipe, param_grid, cv=5, factor=3, random_state=42)"},
+ {n:'중첩 교차검증',h:1,d:'튜닝까지 포함한 정직한 성능 추정. 논문·보고용',c:"inner = StratifiedKFold(3, shuffle=True, random_state=42)\nouter = StratifiedKFold(5, shuffle=True, random_state=42)\ngs = GridSearchCV(pipe, grid, cv=inner, scoring='roc_auc')\nscore = cross_val_score(gs, X, y, cv=outer, scoring='roc_auc')\n# 같은 데이터로 튜닝하고 평가하면 점수가 낙관적으로 부풀려진다"},
+ {n:'learning_curve',h:1,d:'데이터를 더 모으면 나아질지 판단',c:"from sklearn.model_selection import learning_curve\nsizes, tr, te = learning_curve(pipe, X, y, cv=cv,\n                               train_sizes=np.linspace(.1, 1., 10), n_jobs=-1)\nplt.plot(sizes, tr.mean(1), label='train'); plt.plot(sizes, te.mean(1), label='val')\n# 두 곡선 간격이 크면 -> 데이터를 더 모으면 도움\n# 둘 다 낮은 곳에서 붙으면 -> 모델이 너무 단순 (데이터 더 모아도 소용없음)"},
+ {n:'validation_curve',h:1,d:'한 하이퍼파라미터에 따른 과적합/과소적합 곡선',c:"from sklearn.model_selection import validation_curve\ntr, te = validation_curve(pipe, X, y, param_name='model__C',\n                          param_range=np.logspace(-3, 3, 7), cv=cv)"},
+ {n:'error_score',d:'일부 조합이 실패해도 탐색을 계속',c:"GridSearchCV(pipe, grid, cv=5, error_score=np.nan)   # 기본값. 실패는 nan\nGridSearchCV(pipe, grid, cv=5, error_score='raise')  # 디버깅할 때는 이걸로"},
+]},
+{g:'eval',cat:'분류 평가지표',note:'정확도 하나만 보는 것이 가장 흔한 실수입니다. 문제의 성격에 맞는 지표를 고르세요.',items:[
+ {n:'classification_report',h:1,d:'한 번에 전부. target_names를 넣어야 어느 쪽이 뭔지 보인다',c:"from sklearn.metrics import classification_report\nprint(classification_report(y_te, y_pred,\n      target_names=['악성','양성'], digits=4))\nreport = classification_report(y_te, y_pred, output_dict=True)   # dict로 받기\npd.DataFrame(report).T"},
+ {n:'confusion_matrix',h:1,d:'실제 vs 예측 교차표. 모든 지표가 여기서 나온다',c:"from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay\ncm = confusion_matrix(y_te, y_pred)\ntn, fp, fn, tp = cm.ravel()      # 이진 분류\nConfusionMatrixDisplay.from_estimator(pipe, X_te, y_te,\n    display_labels=['악성','양성'], normalize='true', cmap='Blues')"},
+ {n:'precision / recall / f1',h:1,d:'무엇을 지킬지에 따라 선택. average는 다중분류에서 중요',c:"from sklearn.metrics import precision_score, recall_score, f1_score\n# precision: 양성이라 한 것 중 진짜 양성 비율  -> 헛detect를 줄이고 싶을 때\n# recall   : 진짜 양성 중 찾아낸 비율          -> 놓치면 안 될 때 (암 진단)\nrecall_score(y_te, y_pred, pos_label=0)          # 특정 클래스 지정\nf1_score(y_te, y_pred, average='macro')          # 클래스별 단순 평균 (불균형에 적합)\nf1_score(y_te, y_pred, average='weighted')       # 개수 가중 평균"},
+ {n:'roc_auc_score',h:1,d:'임계값과 무관한 판별력. 확률을 넣어야 한다',c:"from sklearn.metrics import roc_auc_score\nroc_auc_score(y_te, pipe.predict_proba(X_te)[:, 1])          # 이진\nroc_auc_score(y_te, proba, multi_class='ovr', average='macro')  # 다중"},
+ {n:'average_precision_score',h:1,d:'PR 곡선 아래 면적. 불균형 데이터에서는 ROC보다 정직하다',c:"from sklearn.metrics import average_precision_score\naverage_precision_score(y_te, proba)\n# 양성이 1%인 데이터에서 ROC-AUC는 0.9여도 실제로는 쓸모없을 수 있다"},
+ {n:'roc_curve / precision_recall_curve',h:1,d:'곡선을 직접 그려 임계값을 고른다',c:"from sklearn.metrics import roc_curve, precision_recall_curve, RocCurveDisplay\nfpr, tpr, thr = roc_curve(y_te, proba)\nprec, rec, thr = precision_recall_curve(y_te, proba)\nRocCurveDisplay.from_estimator(pipe, X_te, y_te)"},
+ {n:'임계값 조정',h:1,d:'0.5는 기본값일 뿐이다. 목표에 맞춰 직접 정한다',c:"# 재현율 90% 이상을 만족하는 것 중 정밀도가 가장 높은 임계값\nprec, rec, thr = precision_recall_curve(y_te, proba)\nok = rec[:-1] >= 0.90\nbest = thr[ok][prec[:-1][ok].argmax()]\ny_pred = (proba >= best).astype(int)\nprint(f'임계값 {best:.3f} -> 재현율 {recall_score(y_te,y_pred):.3f}, 정밀도 {precision_score(y_te,y_pred):.3f}')"},
+ {n:'log_loss / brier_score_loss',d:'확률 자체의 정확도. 확률을 그대로 쓸 때 중요',c:"from sklearn.metrics import log_loss, brier_score_loss\nlog_loss(y_te, proba)\nbrier_score_loss(y_te, proba)     # 0에 가까울수록 좋음"},
+ {n:'CalibratedClassifierCV',d:'예측 확률 보정. RandomForest·SVM의 확률은 잘 안 맞는다',c:"from sklearn.calibration import CalibratedClassifierCV, CalibrationDisplay\nCalibratedClassifierCV(RandomForestClassifier(random_state=42), method='isotonic', cv=5)\nCalibrationDisplay.from_estimator(pipe, X_te, y_te, n_bins=10)"},
+ {n:'make_scorer',h:1,d:'커스텀 지표를 CV/GridSearch에 넘기기',c:"from sklearn.metrics import make_scorer, fbeta_score\n# 재현율을 정밀도보다 2배 중시\nscorer = make_scorer(fbeta_score, beta=2)\ncross_val_score(pipe, X, y, cv=5, scoring=scorer)\nmake_scorer(f1_score, pos_label=0)              # 특정 클래스 기준"},
+ {n:'사용 가능한 scoring 이름',d:'문자열로 넘길 수 있는 지표 목록 확인',c:"from sklearn.metrics import get_scorer_names\nsorted(get_scorer_names())\n# 자주 쓰는 것: 'accuracy','f1','f1_macro','roc_auc','average_precision',\n#              'neg_mean_absolute_error','neg_root_mean_squared_error','r2'"},
+]},
+{g:'eval',cat:'회귀 평가지표',note:'sklearn은 "클수록 좋다"로 통일하기 위해 오차 지표에 neg_ 접두사를 붙입니다.',items:[
+ {n:'MAE',h:1,d:'평균 절대 오차. 이상치에 둔감하고 해석이 직관적',c:"from sklearn.metrics import mean_absolute_error\nmean_absolute_error(y_te, y_pred)   # 평균적으로 이만큼 틀린다 (y와 같은 단위)"},
+ {n:'RMSE',h:1,d:'큰 오차에 더 큰 벌점. sklearn 1.4부터 전용 함수 제공',c:"from sklearn.metrics import root_mean_squared_error, mean_squared_error\nroot_mean_squared_error(y_te, y_pred)      # 권장\n# mean_squared_error(y, p, squared=False)는 폐기됨"},
+ {n:'R2',h:1,d:'설명력. 1이 완벽, 0이면 평균으로 찍은 것과 같음. 음수도 가능',c:"from sklearn.metrics import r2_score\nr2_score(y_te, y_pred)\n# 직접 계산\nss_res = ((y_te - y_pred) ** 2).sum()\nss_tot = ((y_te - y_te.mean()) ** 2).sum()\n1 - ss_res / ss_tot"},
+ {n:'MAPE',d:'퍼센트 오차. 값의 크기가 제각각일 때. y에 0이 있으면 발산',t:'warn',c:"from sklearn.metrics import mean_absolute_percentage_error\nmean_absolute_percentage_error(y_te, y_pred)   # 0.15 = 평균 15% 오차"},
+ {n:'median_absolute_error',d:'중앙값 기반. 이상치에 가장 강함',c:"from sklearn.metrics import median_absolute_error\nmedian_absolute_error(y_te, y_pred)"},
+ {n:'CV에서의 회귀 지표',h:1,d:'neg_ 접두사가 붙고 부호가 반대다',c:"s = cross_val_score(pipe, X, y, cv=5, scoring='neg_root_mean_squared_error')\nprint(f'RMSE = {-s.mean():.4f} ± {s.std():.4f}')   # 부호를 뒤집어 읽는다"},
+ {n:'잔차 진단',h:1,d:'지표 숫자보다 잔차 그림이 더 많은 걸 알려준다',c:"resid = y_te - y_pred\nplt.scatter(y_pred, resid, alpha=.5); plt.axhline(0, c='r', ls='--')\nplt.xlabel('예측값'); plt.ylabel('잔차')\n# 깔때기 모양 -> 분산이 일정하지 않음 (로그 변환 검토)\n# 곡선 패턴   -> 비선형 관계를 놓치고 있음"},
+]},
+{g:'eval',cat:'모델 해석',note:'',items:[
+ {n:'permutation_importance',h:1,d:'변수를 섞어 성능이 얼마나 떨어지는지 측정. 모델 종류를 안 가린다',c:"from sklearn.inspection import permutation_importance\nr = permutation_importance(pipe, X_te, y_te, n_repeats=10,\n                           scoring='roc_auc', random_state=42, n_jobs=-1)\npd.Series(r.importances_mean, index=X.columns).nlargest(15).plot.barh()\n# feature_importances_의 편향이 없어 더 신뢰할 만하다\n# 단, 상관 높은 변수끼리는 서로의 중요도를 깎아먹는다"},
+ {n:'PartialDependenceDisplay',h:1,d:'변수가 예측에 미치는 영향을 곡선으로. 방향과 형태를 본다',c:"from sklearn.inspection import PartialDependenceDisplay\nPartialDependenceDisplay.from_estimator(pipe, X_te, features=['age','fare'])\nPartialDependenceDisplay.from_estimator(pipe, X_te, features=[('age','fare')])  # 2변수 상호작용\nPartialDependenceDisplay.from_estimator(pipe, X_te, features=['age'], kind='both')  # ICE 포함"},
+ {n:'계수 시각화',h:1,d:'선형 모델 해석. 스케일링 후여야 크기 비교가 의미 있다',c:"names = pipe[:-1].get_feature_names_out()\ncoef = pd.Series(pipe[-1].coef_[0], index=names)\ncoef.reindex(coef.abs().sort_values(ascending=False).index).head(15).plot.barh()"},
+ {n:'plot_tree / export_text',d:'트리 규칙을 사람이 읽을 수 있는 형태로',c:"from sklearn.tree import plot_tree, export_text\nprint(export_text(tree, feature_names=list(X.columns), max_depth=3))"},
+ {n:'DummyClassifier / DummyRegressor',h:1,d:'기준선. 이것보다 못하면 모델이 의미 없다',c:"from sklearn.dummy import DummyClassifier, DummyRegressor\ncross_val_score(DummyClassifier(strategy='most_frequent'), X, y, cv=5)\ncross_val_score(DummyRegressor(strategy='mean'), X, y, cv=5, scoring='r2')\n# 불균형 데이터에서 정확도 95%가 의미 있는지 확인하는 가장 빠른 방법"},
+]},
+{g:'eval',cat:'불균형 데이터',note:'양성이 1~5%인 데이터에서는 지표·임계값·가중치를 전부 다시 골라야 합니다.',items:[
+ {n:'class_weight',h:1,d:'소수 클래스에 가중치. 가장 간단한 첫 대응',c:"LogisticRegression(class_weight='balanced')\nRandomForestClassifier(class_weight='balanced_subsample')\nSVC(class_weight={0: 1, 1: 10})     # 직접 지정"},
+ {n:'sample_weight',d:'샘플별 가중치. fit에 넘긴다',c:"from sklearn.utils.class_weight import compute_sample_weight\nw = compute_sample_weight('balanced', y_tr)\nmodel.fit(X_tr, y_tr, sample_weight=w)\n# Pipeline 안이면: pipe.fit(X, y, model__sample_weight=w)"},
+ {n:'지표 바꾸기',h:1,d:'accuracy 대신 average_precision / f1 / recall',c:"cross_val_score(pipe, X, y, cv=cv, scoring='average_precision')\n# 양성 1% 데이터에서 '전부 음성'만 찍어도 accuracy는 0.99가 나온다"},
+ {n:'stratify 유지',h:1,d:'분할·CV 모두 계층화. 안 하면 fold에 양성이 0개일 수 있다',c:"train_test_split(X, y, stratify=y, test_size=.2, random_state=42)\nStratifiedKFold(5, shuffle=True, random_state=42)"},
+ {n:'임계값 최적화',h:1,d:'가중치보다 임계값 조정이 효과적일 때가 많다',c:"# 비용을 알면 기대비용이 최소인 임계값을 직접 찾는다\ncost_fn, cost_fp = 100, 1        # 놓치는 비용 : 헛detect 비용\nthrs = np.linspace(.01, .99, 99)\ncosts = [((proba>=t).astype(int)==0)[y_te==1].sum()*cost_fn +\n         ((proba>=t).astype(int)==1)[y_te==0].sum()*cost_fp for t in thrs]\nbest_thr = thrs[np.argmin(costs)]"},
+]},
+{g:'eval',cat:'운영 · 저장 · 재현성',note:'',items:[
+ {n:'joblib 저장',h:1,d:'모델이 아니라 Pipeline을 저장한다. 설정과 열 목록도 함께',c:"import joblib\njoblib.dump({'pipeline': pipe,\n             'columns': list(X.columns),\n             'threshold': best_thr,\n             'sklearn_version': sklearn.__version__},\n            'models/model.joblib', compress=3)\n\nart = joblib.load('models/model.joblib')\nart['pipeline'].predict(new_df)    # 전처리 안 한 원본 그대로"},
+ {n:'저장 후 검증',h:1,d:'불러와서 원본 스키마로 예측되는지 반드시 확인',c:"loaded = joblib.load('models/model.joblib')['pipeline']\nassert (loaded.predict(X_te) == pipe.predict(X_te)).all(), '저장/복원 불일치'"},
+ {n:'재현성 체크리스트',h:1,d:'random_state를 빠짐없이 고정',c:"SEED = 42\ntrain_test_split(..., random_state=SEED)\nStratifiedKFold(..., shuffle=True, random_state=SEED)\nRandomForestClassifier(random_state=SEED)\nnp.random.default_rng(SEED)\n# 하나라도 빠지면 실행할 때마다 결과가 달라진다"},
+ {n:'버전 고정',h:1,d:'sklearn 버전이 다르면 pickle이 깨질 수 있다',c:"import sklearn; print(sklearn.__version__)\n# requirements.txt / pyproject.toml에 버전을 못 박아둘 것\n# scikit-learn==1.7.2"},
+ {n:'경고 제어',d:'개발 중엔 경고를 에러로 승격시켜 문제를 조기에 잡는다',c:"import warnings\nwarnings.simplefilter('error', FutureWarning)   # 폐기 예정 API를 즉시 발견\nwarnings.filterwarnings('ignore', category=ConvergenceWarning)"},
+ {n:'n_jobs',d:'병렬 처리. -1은 전체 코어. 중첩되면 오히려 느려진다',c:"GridSearchCV(..., n_jobs=-1)          # 여기서 병렬화하고\nRandomForestClassifier(n_jobs=1)     # 안쪽은 1로 두는 편이 빠를 때가 많다"},
+]},
+];
+
+const out=document.getElementById('out'), toc=document.getElementById('toc');
+let selected=new Map(), filt='all', qtext='';
+const GN={prep:'전처리 · 데이터', model:'모델', eval:'평가 · 튜닝 · 운영'};
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function slug(c){return c.replace(/[^a-zA-Z0-9가-힣]/g,'-');}
+
+function build(){
+  out.innerHTML=''; toc.innerHTML='';
+  let curG=null, shown=0;
+  const q=qtext.trim().toLowerCase();
+  D.forEach(sec=>{
+    if(['prep','model','eval'].includes(filt) && sec.g!==filt) return;
+    let items=sec.items;
+    if(filt==='hot') items=items.filter(i=>i.h);
+    if(q) items=items.filter(i=>(i.n+' '+i.d+' '+i.c+' '+sec.cat).toLowerCase().includes(q));
+    if(!items.length) return;
+    shown+=items.length;
+    if(sec.g!==curG){
+      curG=sec.g;
+      const h=document.createElement('h2'); h.className='lib'; h.id=curG;
+      h.textContent=GN[curG]; out.appendChild(h);
+    }
+    const id=slug(sec.cat);
+    const a=document.createElement('a'); a.href='#'+id; a.textContent=sec.cat; toc.appendChild(a);
+    const h3=document.createElement('h3'); h3.className='cat'; h3.id=id;
+    h3.innerHTML='<span>'+sec.cat+'</span>'; out.appendChild(h3);
+    if(sec.note){const p=document.createElement('p');p.className='cat-note';p.textContent=sec.note;out.appendChild(p);}
+    items.forEach(it=>{
+      const key=sec.cat+'|'+it.n;
+      const div=document.createElement('div');
+      div.className='item'+(selected.has(key)?' sel':'');
+      const tag = it.t==='avoid' ? '<span class="tag avoid">피할 것</span>'
+                : it.t==='warn'  ? '<span class="tag warn">주의</span>'
+                : it.h          ? '<span class="tag hot">핵심</span>' : '';
+      div.innerHTML='<input type="checkbox" '+(selected.has(key)?'checked':'')+' aria-label="'+esc(it.n)+' 선택">'+
+        '<div><div class="hd"><span class="nm">'+esc(it.n)+'</span>'+tag+
+        '<span class="ds">'+esc(it.d)+'</span></div><pre><code>'+esc(it.c)+'</code></pre></div>';
+      div.querySelector('input').addEventListener('change',e=>{
+        if(e.target.checked){selected.set(key,{cat:sec.cat,...it});div.classList.add('sel');}
+        else{selected.delete(key);div.classList.remove('sel');}
+        upd();
+      });
+      out.appendChild(div);
+    });
+  });
+  if(!shown) out.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+  const a=document.createElement('a'); a.href='#gd'; a.textContent='▸ 경사하강법 직접 구현'; toc.appendChild(a);
+}
+function upd(){
+  const n=selected.size;
+  document.getElementById('nsel').textContent=n;
+  document.getElementById('show').disabled=!n;
+  document.getElementById('bn').textContent=n;
+  if(!n) document.getElementById('basket').classList.remove('on');
+  else document.getElementById('bp').textContent=snippet();
+}
+function snippet(){
+  const g={};
+  selected.forEach(v=>{(g[v.cat] ||= []).push(v);});
+  let s='import numpy as np\nimport pandas as pd\n';
+  Object.entries(g).forEach(([k,arr])=>{
+    s+='\n\n# '+'='.repeat(60)+'\n# '+k+'\n# '+'='.repeat(60)+'\n';
+    arr.forEach(v=>{s+='\n# ['+v.n+'] '+v.d+'\n'+v.c+'\n';});
+  });
+  return s;
+}
+document.getElementById('q').addEventListener('input',e=>{qtext=e.target.value;build();});
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true'); filt=c.dataset.f; build();
+}));
+document.getElementById('clr').addEventListener('click',()=>{selected.clear();build();upd();});
+document.getElementById('show').addEventListener('click',()=>{
+  document.getElementById('bp').textContent=snippet();
+  document.getElementById('basket').classList.add('on');
+});
+document.getElementById('bx').addEventListener('click',()=>document.getElementById('basket').classList.remove('on'));
+document.getElementById('bc').addEventListener('click',async e=>{
+  try{await navigator.clipboard.writeText(snippet());e.target.textContent='복사됨 ✓';}
+  catch{e.target.textContent='복사 실패 — 직접 선택하세요';}
+  setTimeout(()=>e.target.textContent='클립보드로 복사',1600);
+});
+document.getElementById('bd').addEventListener('click',()=>{
+  const b=new Blob([snippet()],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='sklearn_snippets.py'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+build(); upd();
+</script>
+</body>
+</html>

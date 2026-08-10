@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>머신러닝 회귀 — 핵심 개념 정리</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f7f7f5; --bg3:#efeee9;
+  --fg:#1f1f1d; --fg2:#5f5e5a; --fg3:#8b8a84;
+  --line:#e2e1db; --line2:#cfcec7;
+  --acc:#0f6e56; --acc-bg:#e1f5ee;
+  --acc2:#534ab7; --acc2-bg:#eeedfe;
+  --warn:#854f0b; --warn-bg:#faeeda;
+  --dang:#a32d2d; --dang-bg:#fcebeb;
+  --code-bg:#f4f3ef;
+  --teal:#1D9E75; --coral:#D85A30; --purple:#7F77DD; --gray:#B4B2A9;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18; --bg2:#222220; --bg3:#2b2b28;
+    --fg:#eceae4; --fg2:#a8a69f; --fg3:#7a7973;
+    --line:#33332f; --line2:#454540;
+    --acc:#5dcaa5; --acc-bg:#0f3d31;
+    --acc2:#afa9ec; --acc2-bg:#2b2757;
+    --warn:#efb45c; --warn-bg:#3d2c0e;
+    --dang:#f09595; --dang-bg:#3d1616;
+    --code-bg:#131312;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:118px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+     font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 100px}
+
+header.hero{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+header.hero h1{margin:0 0 8px;font-size:27px;font-weight:600;letter-spacing:-.02em}
+header.hero p{margin:0 0 14px;color:var(--fg2);font-size:14px}
+header.hero a{color:var(--acc)}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;
+       background:var(--bg3);color:var(--fg2);border:1px solid var(--line)}
+.badge.ok{background:var(--acc-bg);color:var(--acc);border-color:transparent}
+
+.toolbar{position:sticky;top:0;z-index:50;background:var(--bg);
+         border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:8px}
+.toolbar .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#q{flex:1;min-width:200px;padding:9px 12px;font-size:14px;font-family:var(--sans);
+   border:1px solid var(--line2);border-radius:8px;background:var(--bg2);color:var(--fg)}
+#q:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.chip{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:20px;
+      background:var(--bg2);color:var(--fg2);cursor:pointer;user-select:none;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--acc-bg);color:var(--acc);border-color:transparent;font-weight:600}
+.chip.mode[aria-pressed="true"]{background:var(--acc2-bg);color:var(--acc2)}
+.count{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums}
+
+nav.toc{display:flex;gap:5px;flex-wrap:wrap;padding:12px 0 4px;border-bottom:1px solid var(--line);margin-bottom:26px}
+nav.toc a{font-size:12px;padding:4px 9px;border-radius:6px;color:var(--fg2);
+          text-decoration:none;background:var(--bg2);border:1px solid var(--line)}
+nav.toc a:hover{color:var(--acc);border-color:var(--acc)}
+
+h2.grp{margin:42px 0 4px;font-size:21px;font-weight:600;letter-spacing:-.01em;
+       padding-bottom:8px;border-bottom:2px solid var(--fg)}
+h3.cat{margin:28px 0 10px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px}
+h3.cat::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:13px;color:var(--fg2);margin:-4px 0 12px}
+
+.term{padding:12px 14px;border:1px solid var(--line);border-radius:9px;
+      margin-bottom:7px;background:var(--bg2)}
+.term .t{font-size:15px;font-weight:600;color:var(--acc)}
+.term .en{font-family:var(--mono);font-size:12.5px;color:var(--fg3);margin-left:6px}
+.term .star{font-size:10.5px;padding:1px 6px;border-radius:4px;margin-left:8px;
+            background:var(--acc-bg);color:var(--acc);font-weight:600;vertical-align:2px}
+.term .d{font-size:14px;margin-top:5px}
+.term .x{font-size:13px;color:var(--fg2);margin-top:5px;padding-left:11px;border-left:2px solid var(--line2)}
+.term code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1.5px 5px;border-radius:4px}
+body.cards .term{cursor:pointer}
+body.cards .term .d,body.cards .term .x{display:none}
+body.cards .term.open .d,body.cards .term.open .x{display:block}
+body.cards .term::after{content:"클릭하면 정답";font-size:11.5px;color:var(--fg3);display:block;margin-top:4px}
+body.cards .term.open::after{display:none}
+
+pre.block{padding:15px 17px;background:var(--code-bg);border:1px solid var(--line);
+          border-radius:9px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62}
+pre.block .hl{color:var(--acc);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12.5px;color:var(--fg2);background:var(--bg2)}
+td code,p code,li code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1.5px 5px;border-radius:4px}
+tr.best td{background:var(--acc-bg);font-weight:500}
+.callout{padding:13px 16px;border-radius:9px;margin:16px 0;font-size:13.5px;border:1px solid transparent}
+.callout.good{background:var(--acc-bg)}
+.callout.info{background:var(--acc2-bg)}
+.callout.warn{background:var(--warn-bg)}
+.callout > b:first-child{display:block;margin-bottom:6px;font-size:14px}
+.callout ul,.callout ol{margin:0;padding-left:20px}
+.callout li{margin-bottom:5px}
+.callout li:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:740px){.two{grid-template-columns:1fr}}
+.empty{padding:40px;text-align:center;color:var(--fg3);font-size:14px}
+
+.qa{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--bg2);overflow:hidden}
+.qa summary{padding:12px 15px;cursor:pointer;font-weight:500;font-size:14.5px;list-style:none}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::before{content:"Q  ";font-family:var(--mono);color:var(--acc);font-weight:600}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .a{padding:12px 15px;font-size:14px}
+.qa .a::before{content:"A  ";font-family:var(--mono);color:var(--acc2);font-weight:600}
+
+.cht text{font-family:var(--sans);font-size:12px;fill:var(--fg2)}
+.cht text.lb{font-size:13px;fill:var(--fg);font-weight:500}
+.cht text.cal{fill:var(--acc)}
+.cht .grid{stroke:var(--line);stroke-width:.5}
+.cht .axis{stroke:var(--line2);stroke-width:.5}
+.cht .dash{stroke:var(--fg3);stroke-width:.5;stroke-dasharray:3 3}
+
+@media print{.toolbar,nav.toc{display:none} .term{break-inside:avoid;background:#fff}
+  body.cards .term .d,body.cards .term .x{display:block} body{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>머신러닝 회귀 — 핵심 개념 정리</h1>
+  <p><code>data31_ML_회귀알고리즘</code> 노트북에 나온 개념을 전부 뽑아 정리했습니다. <b>암기 모드</b>를 켜면 정의가 숨겨져 플래시카드처럼 쓸 수 있습니다. · 함께 보기: <a href="sklearn_실무_레퍼런스.html">scikit-learn 레퍼런스</a> · <a href="pandas_numpy_실무_레퍼런스.html">Pandas · NumPy 레퍼런스</a></p>
+  <div class="badges">
+    <span class="badge" id="nterm">용어 0개</span>
+    <span class="badge">데이터: load_diabetes (442행 × 10열)</span>
+    <span class="badge ok">수치는 실행 검증값</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="row">
+    <input id="q" type="search" placeholder="검색 — 용어·정의·설명 전체 (예: 과적합, alpha, 커널)" autocomplete="off">
+    <button class="chip" data-f="all" aria-pressed="true">전체</button>
+    <button class="chip" data-f="basic" aria-pressed="false">기초</button>
+    <button class="chip" data-f="reg" aria-pressed="false">규제·과적합</button>
+    <button class="chip" data-f="data" aria-pressed="false">데이터</button>
+    <button class="chip" data-f="algo" aria-pressed="false">알고리즘</button>
+    <button class="chip" data-f="eval" aria-pressed="false">평가·튜닝</button>
+    <button class="chip" data-f="hot" aria-pressed="false">★ 핵심만</button>
+    <button class="chip mode" id="cardbtn" aria-pressed="false">암기 모드</button>
+    <span class="count" id="cnt"></span>
+  </div>
+</div>
+
+<nav class="toc" id="toc"></nav>
+
+<!-- ============ 개념 지도 ============ -->
+<section>
+<h2 class="grp" id="map">개념 지도</h2>
+<p class="note">개별 용어를 외우기 전에, 전체가 어떻게 연결되는지 먼저 보세요.</p>
+<pre class="block"><code>                       ┌─ 문제 정의 ─┐
+                        회귀 vs 분류
+                             │
+        ┌────────────────────┼────────────────────┐
+     데이터 준비            학습                 평가
+   train/test 분할       손실함수(MSE)         R², MSE, RMSE
+   스케일링              최소화 방법            교차검증(K-Fold)
+   Pipeline              → 파라미터 학습        기준선(baseline)
+   특성 확장                   │                     │
+                              │                     │
+                        하이퍼파라미터 ←──── GridSearchCV
+                              │
+                        ┌─────┴─────┐
+                      규제        모델 복잡도
+                   L1/L2/alpha    depth, degree, C
+                        └─────┬─────┘
+                              ↓
+                    과적합  ↔  과소적합
+                   (편향-분산 트레이드오프)</code></pre>
+
+<div class="callout good">
+  <b>한 문장으로 꿰기</b>
+  데이터를 나누고(train/test), 스케일을 맞추고(Pipeline), <b>손실함수(MSE)를 최소화해 파라미터(<code>coef_</code>)를 학습</b>한다. 이때 <b>하이퍼파라미터(<code>alpha</code>)로 규제 세기를 조절해 과적합과 과소적합 사이의 균형점</b>을 찾는데, 그 균형점은 <b>GridSearchCV가 교차검증 점수로</b> 찾아준다.
+</div>
+</section>
+
+<main id="out"></main>
+
+<!-- ============ 핵심 구분 ============ -->
+<section>
+<h2 class="grp" id="key">핵심 구분 3가지</h2>
+
+<h3 class="cat">1. 파라미터 vs 하이퍼파라미터</h3>
+<p class="note">가장 많이 헷갈리는 지점이자 가장 자주 물어보는 것입니다.</p>
+<table>
+<thead><tr><th style="width:20%"></th><th style="width:40%">파라미터 (Parameter)</th><th style="width:40%">하이퍼파라미터 (Hyperparameter)</th></tr></thead>
+<tbody>
+<tr><td><b>누가 정하나</b></td><td><b>모델이 데이터로 학습</b></td><td><b>사람이 미리 지정</b></td></tr>
+<tr><td><b>예시</b></td><td><code>coef_</code>, <code>intercept_</code></td><td><code>alpha</code>, <code>max_depth</code>, <code>C</code>, <code>degree</code>, <code>l1_ratio</code></td></tr>
+<tr><td><b>언제</b></td><td><code>fit()</code> 실행 중에</td><td><code>fit()</code> 실행 <b>전에</b></td></tr>
+<tr><td><b>찾는 방법</b></td><td>손실함수 최소화</td><td><code>GridSearchCV</code> 등으로 탐색</td></tr>
+</tbody>
+</table>
+<p class="note">노트북에 나오는 모든 표(<code>alpha</code>, <code>max_depth</code>, <code>C</code>, <code>epsilon</code>, <code>hidden_layer_sizes</code>…)가 전부 하이퍼파라미터 목록입니다.</p>
+
+<h3 class="cat">2. 규제 3형제</h3>
+<pre class="block"><code>LinearRegression ──┬── + L2 ──→ Ridge        계수를 0 <span class="hl">쪽으로</span> 축소, 변수는 전부 유지
+   (규제 없음)      ├── + L1 ──→ Lasso        계수를 <span class="hl">정확히 0으로</span> → 변수 선택 효과
+                    └── + 둘다 ─→ ElasticNet   l1_ratio로 비율 조절 (0.0=Ridge, 1.0=Lasso)</code></pre>
+
+<h3 class="cat">3. 스케일링이 필요한 모델 / 아닌 모델</h3>
+<div class="two">
+  <div class="callout good"><b>필요함 — 크기를 직접 계산하는 모델</b>
+    <ul>
+      <li><b>Ridge · Lasso · ElasticNet</b> — 규제가 계수 크기 기준</li>
+      <li><b>SVR</b> — 거리 기반 커널</li>
+      <li><b>KNN</b> — 거리 계산</li>
+      <li><b>MLP</b> — 경사하강법으로 학습</li>
+    </ul>
+  </div>
+  <div class="callout info"><b>불필요 — 순서만 보는 모델</b>
+    <ul>
+      <li><b>LinearRegression</b> — 규제가 없어 계수 크기가 무관</li>
+      <li><b>DecisionTree</b> — 분할 기준이 크기가 아닌 <b>순서</b></li>
+      <li><b>RandomForest · GradientBoosting</b> — 같은 이유</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- ============ alpha 실측 ============ -->
+<section>
+<h2 class="grp" id="alpha">alpha와 과적합 — 실측 데이터</h2>
+<p class="note">2차 다항 특성 + Ridge + StandardScaler로 <code>alpha</code>만 바꿔가며 측정했습니다. 학습 점수는 계속 내려가지만, <b>교차검증 점수는 올라갔다 다시 내려갑니다.</b> 그 꼭짓점을 찾는 것이 튜닝의 본질입니다.</p>
+
+<svg class="cht" width="100%" viewBox="0 0 680 384" role="img" aria-label="규제 강도 alpha에 따른 학습 성능과 교차검증 성능 변화 그래프">
+<line class="grid" x1="90" y1="87.7" x2="640" y2="87.7"/>
+<line class="grid" x1="90" y1="158.5" x2="640" y2="158.5"/>
+<line class="grid" x1="90" y1="229.2" x2="640" y2="229.2"/>
+<line class="axis" x1="90" y1="70" x2="90" y2="300"/>
+<line class="axis" x1="90" y1="300" x2="640" y2="300"/>
+<text x="82" y="300" text-anchor="end" dominant-baseline="central">0.0</text>
+<text x="82" y="229.2" text-anchor="end" dominant-baseline="central">0.2</text>
+<text x="82" y="158.5" text-anchor="end" dominant-baseline="central">0.4</text>
+<text x="82" y="87.7" text-anchor="end" dominant-baseline="central">0.6</text>
+<text x="90" y="316" text-anchor="middle" dominant-baseline="central">0.001</text>
+<text x="168.6" y="316" text-anchor="middle" dominant-baseline="central">0.01</text>
+<text x="247.1" y="316" text-anchor="middle" dominant-baseline="central">0.1</text>
+<text x="325.7" y="316" text-anchor="middle" dominant-baseline="central">1</text>
+<text x="404.3" y="316" text-anchor="middle" dominant-baseline="central">10</text>
+<text x="482.9" y="316" text-anchor="middle" dominant-baseline="central">100</text>
+<text x="561.4" y="316" text-anchor="middle" dominant-baseline="central">1000</text>
+<text x="637" y="316" text-anchor="middle" dominant-baseline="central">10000</text>
+<text x="365" y="338" text-anchor="middle" dominant-baseline="central">alpha — 규제 강도 (로그 눈금)</text>
+<line class="dash" x1="482.9" y1="70" x2="482.9" y2="134"/>
+<polyline points="90,85.6 168.6,85.7 247.1,86.3 325.7,87.2 404.3,91.1 482.9,101.6 561.4,156.0 640,259.7" fill="none" stroke="#D85A30" stroke-width="2"/>
+<polyline points="90,158.6 168.6,157.6 247.1,155.7 325.7,150.5 404.3,143.8 482.9,140.6 561.4,177.1 640,270.1" fill="none" stroke="#1D9E75" stroke-width="2"/>
+<circle cx="90" cy="85.6" r="3" fill="#D85A30"/><circle cx="168.6" cy="85.7" r="3" fill="#D85A30"/>
+<circle cx="247.1" cy="86.3" r="3" fill="#D85A30"/><circle cx="325.7" cy="87.2" r="3" fill="#D85A30"/>
+<circle cx="404.3" cy="91.1" r="3" fill="#D85A30"/><circle cx="482.9" cy="101.6" r="3" fill="#D85A30"/>
+<circle cx="561.4" cy="156.0" r="3" fill="#D85A30"/><circle cx="640" cy="259.7" r="3" fill="#D85A30"/>
+<circle cx="90" cy="158.6" r="3" fill="#1D9E75"/><circle cx="168.6" cy="157.6" r="3" fill="#1D9E75"/>
+<circle cx="247.1" cy="155.7" r="3" fill="#1D9E75"/><circle cx="325.7" cy="150.5" r="3" fill="#1D9E75"/>
+<circle cx="404.3" cy="143.8" r="3" fill="#1D9E75"/>
+<circle cx="482.9" cy="140.6" r="4.5" fill="#1D9E75" stroke="#04342C" stroke-width="1.5"/>
+<circle cx="561.4" cy="177.1" r="3" fill="#1D9E75"/><circle cx="640" cy="270.1" r="3" fill="#1D9E75"/>
+<text x="230" y="255" text-anchor="middle" dominant-baseline="central">과적합 구간</text>
+<text x="230" y="273" text-anchor="middle" dominant-baseline="central">두 선의 간격이 넓다</text>
+<text x="600" y="105" text-anchor="middle" dominant-baseline="central">과소적합 구간</text>
+<text x="600" y="123" text-anchor="middle" dominant-baseline="central">둘 다 무너진다</text>
+<line class="dash" x1="484" y1="196" x2="484" y2="150"/>
+<rect x="420" y="196" width="130" height="44" rx="8" fill="var(--acc-bg)" stroke="var(--acc)" stroke-width="0.5"/>
+<text class="lb cal" x="485" y="210" text-anchor="middle" dominant-baseline="central">alpha = 100</text>
+<text class="cal" x="485" y="228" text-anchor="middle" dominant-baseline="central">CV R² 0.4504 최고</text>
+<line x1="40" y1="362" x2="62" y2="362" stroke="#D85A30" stroke-width="2"/>
+<text x="68" y="362" dominant-baseline="central">학습(train) R²</text>
+<line x1="185" y1="362" x2="207" y2="362" stroke="#1D9E75" stroke-width="2"/>
+<text x="213" y="362" dominant-baseline="central">교차검증(CV) R² — 진짜 실력</text>
+</svg>
+
+<table>
+<thead><tr><th style="width:16%">alpha</th><th style="width:18%">train R²</th><th style="width:18%">CV R²</th><th style="width:20%">계수 크기 합</th><th>판정</th></tr></thead>
+<tbody>
+<tr><td><code>0.001</code></td><td>0.6061</td><td>0.3997</td><td>2468.0</td><td>과적합 (격차 0.206)</td></tr>
+<tr><td><code>0.01</code></td><td>0.6057</td><td>0.4026</td><td>1733.5</td><td>과적합 (격차 0.203)</td></tr>
+<tr><td><code>0.1</code></td><td>0.6039</td><td>0.4077</td><td>920.6</td><td>과적합 (격차 0.196)</td></tr>
+<tr><td><code>1</code></td><td>0.6013</td><td>0.4225</td><td>623.1</td><td>과적합 (격차 0.179)</td></tr>
+<tr><td><code>10</code></td><td>0.5905</td><td>0.4413</td><td>330.0</td><td>과적합 (격차 0.149)</td></tr>
+<tr class="best"><td><code>100</code></td><td>0.5607</td><td><b>0.4504</b></td><td>172.9</td><td><b>적정</b> (격차 0.110)</td></tr>
+<tr><td><code>1000</code></td><td>0.4069</td><td>0.3473</td><td>78.1</td><td>과소적합</td></tr>
+<tr><td><code>10000</code></td><td>0.1140</td><td>0.0845</td><td>17.4</td><td>과소적합</td></tr>
+</tbody>
+</table>
+
+<div class="callout good">
+  <b>이것 하나만 기억하면 됩니다</b>
+  <b>train 점수와 CV 점수의 격차 = 과적합의 크기.</b> alpha를 키우면 계수 크기가 줄고(2468 → 17), 격차도 줄지만, 너무 키우면 두 점수가 함께 무너집니다.
+</div>
+
+<div class="callout warn">
+  <b>alpha는 절대값이 아니라 데이터 스케일에 상대적입니다</b>
+  <code>load_diabetes()</code>의 X는 <b>이미 정규화</b>되어 있습니다(각 열의 제곱합 = 1, 값의 범위 −0.14 ~ 0.20). 그래서 노트북 셀 14의 <code>ElasticNet(alpha=0.1)</code>은 이 데이터에서 <b>엄청나게 강한 규제</b>가 되어 R²가 0.099로 무너졌습니다. 계수 절댓값 합이 3843 → 204로 짓눌려 사실상 평균만 예측하는 모델이 된 것입니다.<br><br>
+  <b>대처</b>: 규제 모델은 항상 <code>StandardScaler</code>와 함께 <code>Pipeline</code>으로 묶고, <code>alpha</code>는 손으로 고르지 말고 <code>GridSearchCV</code>로 찾으세요.
+</div>
+</section>
+
+<!-- ============ 알고리즘 성능 ============ -->
+<section>
+<h2 class="grp" id="perf">알고리즘 성능 비교 — 왜 선형이 이기나</h2>
+<p class="note">노트북은 89개짜리 test set 한 번으로 모델을 비교합니다. 10-fold 교차검증으로 다시 재면 순위가 뒤집힙니다.</p>
+<table>
+<thead><tr><th style="width:32%">모델</th><th style="width:24%">CV R² (10-fold)</th><th style="width:20%">단일 test R²</th><th>비고</th></tr></thead>
+<tbody>
+<tr class="best"><td>ElasticNet + 스케일링</td><td><b>0.4662</b> ± 0.1081</td><td>0.4590</td><td>선형</td></tr>
+<tr><td>Lasso</td><td>0.4660 ± 0.1109</td><td>0.4555</td><td>선형</td></tr>
+<tr><td>Ridge</td><td>0.4650 ± 0.1134</td><td>0.4528</td><td>선형</td></tr>
+<tr><td>LinearRegression</td><td>0.4649 ± 0.1136</td><td>0.4526</td><td>선형</td></tr>
+<tr><td>SVR (rbf)</td><td>0.4580 ± 0.0971</td><td>0.4939</td><td>test에서 과대평가됨</td></tr>
+<tr><td>MLP</td><td>0.4430 ± 0.1253</td><td><b>0.5066</b></td><td><b>test 1등 → CV 6등</b></td></tr>
+<tr><td>Polynomial 2차 (전체 특성)</td><td>0.4413 ± 0.1164</td><td>0.5016</td><td>test에서 과대평가됨</td></tr>
+<tr><td>RandomForest</td><td>0.4228 ± 0.1264</td><td>0.4594</td><td>트리</td></tr>
+<tr><td>KNN (k=15)</td><td>0.4183 ± 0.0924</td><td>0.4236</td><td>거리 기반</td></tr>
+<tr><td>HistGradientBoosting</td><td>0.3579 ± 0.1678</td><td>0.3681</td><td>트리</td></tr>
+<tr><td>DecisionTree (depth=4)</td><td>0.2972 ± 0.1979</td><td>0.3264</td><td>트리</td></tr>
+<tr><td>기준선 (평균만 예측)</td><td>−0.0297 ± 0.0327</td><td>−0.0120</td><td>DummyRegressor</td></tr>
+</tbody>
+</table>
+
+<div class="callout info">
+  <b>결론 — 이 노트북에서 배울 진짜 교훈</b>
+  <ol>
+    <li><b>표준편차가 0.10을 넘습니다.</b> 상위 7개 모델의 차이(0.44~0.47)는 표준편차 안에 묻혀 <b>통계적으로 구분되지 않습니다.</b> 단일 test set 점수로 순위를 매기면 안 됩니다.</li>
+    <li><b>복잡한 모델이 항상 좋은 게 아닙니다.</b> 442행 × 10열은 트리·부스팅·신경망이 패턴을 학습하기엔 너무 작고, 관계 자체가 선형에 가깝습니다.</li>
+    <li><b>어떤 모델도 R² 0.47을 못 넘습니다.</b> 이건 모델의 한계가 아니라 <b>이 10개 특성이 가진 정보의 한계</b>입니다. 더 나아지려면 모델이 아니라 데이터를 늘려야 합니다.</li>
+  </ol>
+</div>
+
+<h3 class="cat">알고리즘 선택 기준</h3>
+<pre class="block"><code>먼저 DummyRegressor로 기준선을 잡는다. 이걸 못 이기면 모델이 무의미하다.
+        │
+데이터가 작고(수천 행 이하) 관계가 단순한가?
+├─ 예 ─────────────────→ Ridge / Lasso        규제 + 해석 가능 + 빠름   ← 이 노트북
+└─ 아니오
+   ├─ 수만~수십만 행, 비선형·상호작용 많음 → HistGradientBoosting
+   ├─ 특성 수 ≫ 샘플 수 (유전자 등)        → Lasso / ElasticNet
+   └─ 이미지·텍스트 등 매우 복잡한 패턴      → 신경망 (sklearn 대신 PyTorch)</code></pre>
+</section>
+
+<!-- ============ Q&A ============ -->
+<section>
+<h2 class="grp" id="qa">시험 · 면접 단골</h2>
+<details class="qa"><summary>Ridge와 Lasso의 차이는?</summary>
+<div class="a">둘 다 과적합을 막는 규제 기법이지만 벌점의 형태가 다릅니다. <b>Ridge(L2)</b>는 계수의 <b>제곱합</b>에 벌점을 주어 계수를 0 <b>쪽으로</b> 줄이지만 정확히 0으로 만들지는 않아 모든 변수가 남습니다. <b>Lasso(L1)</b>는 계수의 <b>절댓값 합</b>에 벌점을 주어 일부 계수를 <b>정확히 0</b>으로 만들기 때문에 자동 변수 선택 효과가 있습니다.</div></details>
+
+<details class="qa"><summary>파라미터와 하이퍼파라미터의 차이는?</summary>
+<div class="a"><b>파라미터</b>는 모델이 데이터를 보고 스스로 학습하는 값입니다(<code>coef_</code>, <code>intercept_</code>). <b>하이퍼파라미터</b>는 학습을 시작하기 전에 사람이 정해주는 값입니다(<code>alpha</code>, <code>max_depth</code>, <code>C</code>). 하이퍼파라미터는 <code>GridSearchCV</code> 같은 방법으로 탐색해서 정합니다.</div></details>
+
+<details class="qa"><summary>alpha를 키우면 어떻게 되나?</summary>
+<div class="a">규제가 강해져 계수가 작아지고 모델이 단순해집니다. 과적합은 줄어들지만 너무 키우면 <b>과소적합</b>이 됩니다. 실측하면 <code>alpha</code>가 0.001에서 10000으로 갈 때 계수 절댓값 합이 2468에서 17로 줄고, CV R²는 0.40 → <b>0.45(최고, alpha=100)</b> → 0.08로 올라갔다 떨어집니다.</div></details>
+
+<details class="qa"><summary>과적합인지 어떻게 판단하나?</summary>
+<div class="a"><b>학습 점수와 검증 점수의 격차</b>를 봅니다. train R²는 높은데 CV R²가 낮으면 과적합입니다. 둘 다 낮으면 과소적합이고요. 그래서 <code>cross_validate(..., return_train_score=True)</code>로 두 점수를 같이 봐야 합니다.</div></details>
+
+<details class="qa"><summary>왜 test 데이터에 fit을 하면 안 되나?</summary>
+<div class="a">테스트셋의 평균·표준편차 같은 정보가 학습 과정에 새어 들어가기 때문입니다(<b>데이터 누수</b>). 그러면 평가 점수가 실제보다 좋게 나와, 실제 서비스에서의 성능을 알 수 없게 됩니다. <code>Pipeline</code>으로 묶으면 교차검증의 각 fold에서 자동으로 train에만 <code>fit</code>이 적용되어 구조적으로 막힙니다.</div></details>
+
+<details class="qa"><summary>왜 SVR·KNN은 스케일링이 필요하고 DecisionTree는 필요 없나?</summary>
+<div class="a">SVR과 KNN은 <b>거리를 계산</b>합니다. 단위가 큰 특성 하나가 거리를 지배해버리므로 스케일을 맞춰야 합니다. 반면 트리는 "이 값이 임계값보다 큰가?"라는 <b>순서</b>만 보기 때문에, 값에 어떤 단조 변환을 해도 분할 결과가 같아 스케일링이 무의미합니다.</div></details>
+
+<details class="qa"><summary>R²가 음수가 나올 수 있나?</summary>
+<div class="a">네. R² = 1 − SS_res/SS_tot 이므로, 모델의 오차가 <b>단순히 평균으로 예측한 것보다 클 때</b> 음수가 됩니다. 위 비교표에서 <code>DummyRegressor</code>의 CV R²가 −0.0297인 것이 그 예입니다.</div></details>
+
+<details class="qa"><summary>다항 회귀의 degree를 무작정 키우면?</summary>
+<div class="a">특성 개수가 폭발적으로 늘어(<b>차원의 저주</b>) 과적합합니다. 실측하면 10개 특성 기준 degree=1일 때 CV R² 0.4658, degree=2에서 0.4413, <b>degree=3에서 0.0111로 붕괴</b>합니다(열이 286개로 증가). degree도 <code>GridSearchCV</code>로 찾아야 하는 하이퍼파라미터입니다.</div></details>
+</section>
+
+</div>
+
+<script>
+const D=[
+{g:'basic',cat:'A. 회귀의 기본 개념',items:[
+ {t:'회귀',e:'Regression',h:1,d:'연속적인 <b>숫자</b>를 예측하는 문제. 범주를 예측하는 분류(Classification)와 대비된다.',x:'노트북 전체가 회귀 문제. 타깃이 25~346의 연속값이다.'},
+ {t:'특성 · 독립변수',e:'feature, X',h:1,d:'예측에 사용하는 <b>입력</b> 변수. 열(column) 하나가 특성 하나.',x:'diabetes 데이터: age, sex, bmi, bp, s1~s6 총 10개.'},
+ {t:'타깃 · 종속변수',e:'target, y',h:1,d:'맞히려는 <b>정답</b> 값.',x:'여기서는 1년 후 당뇨병 진행도.'},
+ {t:'회귀계수 · 가중치',e:'coefficient, weight (w)',h:1,d:'각 특성이 예측에 기여하는 정도. 크기가 클수록 영향이 크다.',x:'<code>model.coef_</code>로 확인. 통계학에서는 회귀계수, 머신러닝에서는 가중치라 부른다 — 같은 것이다.'},
+ {t:'절편 · 편향',e:'intercept, bias (b)',d:'모든 특성이 0일 때의 기준값. 직선의 y절편.',x:'<code>model.intercept_</code>. <code>fit_intercept=True</code>가 기본값.'},
+ {t:'가설함수',e:'Hypothesis',d:'모델이 세운 예측 공식. 선형 회귀에서는 <code>ŷ = w₁x₁ + w₂x₂ + … + b</code>',x:'학습이란 이 식의 w와 b를 찾는 일이다.'},
+]},
+{g:'basic',cat:'B. 학습의 원리',items:[
+ {t:'손실함수 · 비용함수',e:'Loss / Cost function',h:1,d:'예측이 얼마나 틀렸는지 재는 함수. <b>학습 = 손실을 최소화하는 w, b 찾기</b>',x:'회귀는 MSE, 분류는 로그손실을 주로 쓴다.'},
+ {t:'MSE (평균제곱오차)',e:'Mean Squared Error',h:1,d:'<code>(1/n) Σ (y − ŷ)²</code> — 오차를 제곱해 평균낸 값. 회귀의 기본 손실함수.',x:'제곱하므로 <b>큰 오차에 더 큰 벌점</b>이 간다. 이상치에 민감한 이유.'},
+ {t:'최소제곱법',e:'OLS, Ordinary Least Squares',h:1,d:'오차 제곱합을 최소로 만드는 해를 <b>정규방정식으로 한 번에</b> 계산하는 방법.',x:'<code>LinearRegression</code>이 쓰는 방식. 반복이 없어 빠르고 정확하다.'},
+ {t:'경사하강법',e:'Gradient Descent',h:1,d:'기울기의 <b>반대 방향</b>으로 조금씩 이동하며 손실의 최소점을 찾는 반복 방법.',x:'<code>SGDRegressor</code>, <code>MLPRegressor</code>가 쓴다. 데이터가 커서 한 번에 못 풀 때 사용.'},
+ {t:'학습률',e:'learning rate',d:'경사하강법에서 한 걸음의 <b>보폭</b>.',x:'<code>MLPRegressor</code>의 <code>learning_rate_init</code>. 크면 발산하고, 작으면 너무 느리다.'},
+ {t:'수렴',e:'Convergence',d:'반복을 더 해도 손실이 줄지 않는 상태. 학습이 끝났다는 신호.',x:'노트북 셀 36의 <code>ConvergenceWarning</code>은 "1000회 안에 수렴하지 못했다"는 뜻. <code>max_iter</code>를 늘려야 한다.'},
+ {t:'에포크 · 반복 횟수',e:'epoch, max_iter',d:'전체 데이터를 몇 번 반복해 학습할지.',x:'수렴 전에 끊기면 성능 손해, 너무 많으면 시간 낭비.'},
+ {t:'파라미터',e:'Parameter',h:1,d:'모델이 <b>데이터를 보고 스스로 학습</b>하는 값.',x:'<code>coef_</code>, <code>intercept_</code>. <code>fit()</code> 실행 중에 정해진다.'},
+ {t:'하이퍼파라미터',e:'Hyperparameter',h:1,d:'학습을 시작하기 <b>전에 사람이 지정</b>하는 값.',x:'<code>alpha</code>, <code>max_depth</code>, <code>C</code>, <code>degree</code>, <code>l1_ratio</code>. GridSearchCV로 탐색한다.'},
+]},
+{g:'reg',cat:'C. 규제 (Regularization)',items:[
+ {t:'규제 · 정규화',e:'Regularization',h:1,d:'손실함수에 <b>"계수가 크면 벌점"</b>을 추가해 모델이 지나치게 복잡해지는 것을 막는 기법.',x:'"정규화"는 Normalization(스케일링)과 한글 이름이 겹쳐 헷갈리니 <b>규제</b>로 부르는 편이 낫다.'},
+ {t:'L2 규제 → Ridge',e:'Ridge, L2 penalty',h:1,d:'벌점 = <code>α · Σ wⱼ²</code> (제곱합). 계수를 <b>0 쪽으로 축소</b>하지만 0으로 만들지는 않는다.',x:'모든 변수가 살아남는다. 변수 간 상관이 높을 때 안정적.'},
+ {t:'L1 규제 → Lasso',e:'Lasso, L1 penalty',h:1,d:'벌점 = <code>α · Σ |wⱼ|</code> (절댓값합). 계수를 <b>정확히 0</b>으로 만든다.',x:'0이 된 변수는 사실상 제거 → <b>자동 변수 선택</b> 효과.'},
+ {t:'ElasticNet',e:'ElasticNet',h:1,d:'L1과 L2를 <b>동시에</b> 적용. Ridge와 Lasso의 장점을 섞는다.',x:'특성 수가 샘플 수보다 많거나, 상관 높은 변수 그룹이 있을 때 유리.'},
+ {t:'l1_ratio',e:'l1_ratio',h:1,d:'ElasticNet에서 L1이 차지하는 비율. <b>0.0 = Ridge, 1.0 = Lasso, 0.5 = 반반.</b>',x:'ElasticNet 전용 파라미터. LogisticRegression에서는 <code>penalty=\'elasticnet\'</code>일 때만 유효하다.'},
+ {t:'alpha (α)',e:'alpha',h:1,d:'규제의 <b>강도</b>. 클수록 계수가 작아지고 모델이 단순해진다.',x:'⚠️ 절대값이 아니라 <b>데이터 스케일에 상대적</b>이다. 반드시 스케일링과 함께, GridSearchCV로 찾을 것.'},
+ {t:'희소성',e:'Sparsity',d:'계수 상당수가 0인 상태.',x:'Lasso의 결과물. <code>(model.coef_ != 0).sum()</code>으로 살아남은 변수 개수를 센다.'},
+ {t:'축소',e:'Shrinkage',d:'계수의 크기를 전반적으로 줄이는 것.',x:'Ridge의 결과물. 계수 절댓값 합으로 확인할 수 있다.'},
+ {t:'변수 선택',e:'Feature Selection',d:'예측에 도움이 안 되는 특성을 골라내 제거하는 것.',x:'Lasso가 자동으로 해준다. 별도 방법으로는 <code>SelectKBest</code>, <code>RFE</code> 등이 있다.'},
+]},
+{g:'reg',cat:'D. 과적합 · 과소적합',items:[
+ {t:'과적합',e:'Overfitting',h:1,d:'학습 데이터를 <b>외워버려</b> 새 데이터에서 성능이 떨어지는 상태.',x:'증상: train 점수는 높은데 CV 점수가 낮다. 처방: 규제 ↑, 모델 단순화, 데이터 추가.'},
+ {t:'과소적합',e:'Underfitting',h:1,d:'모델이 너무 단순해 패턴 자체를 <b>못 배운</b> 상태.',x:'증상: train도 CV도 둘 다 낮다. 처방: 규제 ↓, 모델 복잡화, 특성 추가.'},
+ {t:'일반화',e:'Generalization',h:1,d:'처음 보는 데이터에서도 잘 작동하는 능력. <b>우리가 진짜 원하는 것.</b>',x:'학습 데이터 점수는 얼마든지 높일 수 있다. 의미가 있는 건 일반화 성능뿐.'},
+ {t:'편향-분산 트레이드오프',e:'Bias-Variance Tradeoff',h:1,d:'<b>편향</b>(너무 단순해서 못 맞힘)과 <b>분산</b>(너무 복잡해서 데이터에 따라 흔들림)을 동시에 줄일 수 없다는 원리.',x:'규제를 키우면 편향↑ 분산↓, 줄이면 편향↓ 분산↑. 균형점을 찾는 게 튜닝.'},
+ {t:'모델 복잡도',e:'Model Capacity',d:'모델이 표현할 수 있는 패턴의 복잡함 정도.',x:'복잡도 손잡이: <code>degree</code>(다항), <code>max_depth</code>(트리), <code>C</code>(SVR), <code>hidden_layer_sizes</code>(신경망), <code>alpha</code>(규제, 반대 방향).'},
+]},
+{g:'data',cat:'E. 데이터 준비',items:[
+ {t:'train / test 분할',e:'train_test_split',h:1,d:'학습용과 평가용 데이터를 나누는 것. <b>모든 작업의 첫 단계.</b>',x:'<code>test_size=0.2</code>가 흔한 선택. 회귀에서는 <code>stratify</code>를 쓰지 않는다(분류 전용).'},
+ {t:'random_state',e:'random_state',h:1,d:'난수를 고정해 <b>매번 같은 결과</b>가 나오게 하는 값.',x:'split·모델·CV 전부에 넣어야 한다. 하나라도 빠지면 실행할 때마다 결과가 달라진다.'},
+ {t:'표준화',e:'Standardization, StandardScaler',h:1,d:'각 특성을 <b>평균 0, 표준편차 1</b>로 변환. 단위가 다른 특성을 같은 눈금에 맞춘다.',x:'규제 모델·거리 기반 모델·신경망에 필수. 트리 계열에는 불필요.'},
+ {t:'데이터 누수',e:'Data Leakage',h:1,d:'테스트 데이터의 정보가 학습에 <b>새어 들어가는</b> 것. 점수가 실제보다 좋게 나온다.',x:'대표적 실수: 분할 전에 스케일링, 테스트셋에 <code>fit()</code>. Pipeline을 쓰면 구조적으로 막힌다.'},
+ {t:'Pipeline',e:'Pipeline',h:1,d:'전처리와 모델을 <b>하나의 덩어리</b>로 묶는 도구.',x:'교차검증의 각 fold에서 자동으로 train에만 <code>fit</code>이 적용된다. 저장도 통째로 해야 나중에 쓸 수 있다.'},
+ {t:'특성 확장 · 다항 특성',e:'PolynomialFeatures',h:1,d:'<code>x → x, x², x₁x₂, …</code> 로 특성을 늘려 <b>선형 모델로 곡선</b>을 표현하는 기법.',x:'<code>degree</code>가 복잡도 손잡이. 열 개수가 급격히 늘어나므로 반드시 규제와 함께 쓴다.'},
+ {t:'상호작용 항',e:'interaction term',d:'<code>x₁ × x₂</code>처럼 두 특성을 곱한 항. "A이면서 동시에 B일 때"를 표현한다.',x:'<code>PolynomialFeatures</code>가 제곱항과 함께 만들어준다. <code>interaction_only=True</code>면 제곱항 없이 상호작용만.'},
+ {t:'차원의 저주',e:'Curse of Dimensionality',d:'특성이 늘수록 필요한 데이터 양이 <b>폭발적으로</b> 증가하는 현상.',x:'실측: 10개 특성을 degree=3으로 확장하면 286개가 되고, CV R²가 0.466 → 0.011로 붕괴한다.'},
+]},
+{g:'algo',cat:'F. 트리 계열 개념',items:[
+ {t:'분할',e:'split',h:1,d:'"이 특성이 임계값보다 큰가?"라는 조건으로 데이터를 둘로 나누는 것.',x:'크기가 아니라 <b>순서</b>만 보기 때문에 트리는 스케일링이 필요 없다.'},
+ {t:'리프 노드',e:'leaf node',h:1,d:'더 이상 나누지 않는 끝 노드. 회귀에서는 여기 모인 샘플들의 <b>평균</b>이 예측값이 된다.',x:'그래서 트리 회귀의 예측값은 계단 모양으로 뚝뚝 끊긴다.'},
+ {t:'max_depth',e:'max_depth',h:1,d:'트리의 최대 깊이. <b>가장 중요한 과적합 제어 장치.</b>',x:'제한하지 않으면 리프마다 샘플 1개가 될 때까지 쪼개 완전히 과적합한다.'},
+ {t:'min_samples_split / leaf',e:'min_samples_*',d:'분할하려면 최소 몇 개, 리프에 최소 몇 개가 있어야 하는지.',x:'클수록 트리가 단순해져 과적합이 줄어든다.'},
+ {t:'트리 시각화',e:'export_graphviz, plot_tree',d:'학습된 규칙을 사람이 읽을 수 있는 그림/텍스트로 출력.',x:'노트북 셀 25~28. <code>export_text()</code>는 추가 설치 없이 바로 쓸 수 있어 더 간편하다.'},
+]},
+{g:'algo',cat:'G. SVR (서포트 벡터 회귀)',items:[
+ {t:'마진 · ε-insensitive zone',e:'margin',h:1,d:'예측이 이 <b>폭 안에 들어오면 벌점을 주지 않는</b> 영역. SVR의 핵심 아이디어.',x:'작은 오차를 무시하므로 잡음과 이상치에 강해진다.'},
+ {t:'epsilon',e:'epsilon',h:1,d:'그 허용 마진의 <b>폭</b>.',x:'크면 둔감(과소적합 방향), 작으면 민감(과적합 방향).'},
+ {t:'C',e:'C',h:1,d:'마진 <b>밖</b> 오차에 주는 벌점의 크기. 규제의 역수 역할.',x:'클수록 훈련 데이터에 민감 → 과적합 위험. <code>alpha</code>와 반대 방향임에 주의.'},
+ {t:'커널',e:'kernel',h:1,d:'데이터를 고차원으로 옮겨 <b>비선형 관계</b>를 다루게 해주는 기법.',x:'<code>linear</code>, <code>poly</code>, <code>rbf</code>(기본), <code>sigmoid</code>. 거리를 계산하므로 스케일링이 필수.'},
+ {t:'gamma',e:'gamma',d:'RBF·poly 커널에서 한 샘플의 <b>영향 범위</b>.',x:'작으면 부드러운 곡선, 크면 복잡하고 구불구불한 경계(과적합).'},
+]},
+{g:'algo',cat:'H. 신경망 (MLP)',items:[
+ {t:'은닉층',e:'hidden layer',h:1,d:'입력층과 출력층 사이의 중간 층. 여기서 특징이 조합된다.',x:'<code>hidden_layer_sizes=(100,)</code> = 뉴런 100개짜리 1층. <code>(100, 50)</code> = 2층.'},
+ {t:'활성화 함수',e:'activation',h:1,d:'각 뉴런의 출력을 비틀어 <b>비선형성</b>을 만드는 함수.',x:'이게 없으면 층을 아무리 쌓아도 결국 하나의 선형 변환이 되어버린다.'},
+ {t:'ReLU',e:'ReLU',d:'<code>max(0, x)</code> — 음수는 0으로, 양수는 그대로. 가장 널리 쓰이는 활성화 함수.',x:'sklearn MLP의 기본값. 대안은 <code>tanh</code>, <code>logistic</code>.'},
+ {t:'solver',e:'solver',d:'가중치를 최적화하는 알고리즘.',x:'<code>adam</code>(기본, 무난), <code>sgd</code>(경사하강법), <code>lbfgs</code>(작은 데이터에 유리).'},
+ {t:'early_stopping',e:'early_stopping',d:'검증 점수가 더 오르지 않으면 학습을 <b>조기 중단</b>.',x:'과적합 방지 + 시간 절약. <code>ConvergenceWarning</code> 대응책이기도 하다.'},
+]},
+{g:'eval',cat:'I. 평가 지표',items:[
+ {t:'R² (결정계수)',e:'R-squared',h:1,d:'<code>1 − SS_res / SS_tot</code> — 모델이 데이터의 변동을 얼마나 설명하는지.',x:'1 = 완벽, 0 = 평균만 찍은 것과 같음, <b>음수도 가능</b>(평균보다 못할 때).'},
+ {t:'MSE',e:'Mean Squared Error',h:1,d:'평균제곱오차. 학습 손실함수이자 평가 지표.',x:'단위가 y의 <b>제곱</b>이라 값 자체를 해석하기 어렵다.'},
+ {t:'RMSE',e:'Root Mean Squared Error',h:1,d:'MSE에 제곱근을 씌운 값.',x:'y와 <b>같은 단위</b>가 되어 "평균 몇만큼 틀린다"로 읽힌다. 보고용으로 MSE보다 낫다.'},
+ {t:'MAE',e:'Mean Absolute Error',d:'평균절대오차. 오차의 절댓값 평균.',x:'제곱하지 않으므로 <b>이상치에 둔감</b>하다. RMSE와 함께 보면 이상치 유무를 짐작할 수 있다.'},
+ {t:'교차검증',e:'Cross Validation, K-Fold',h:1,d:'데이터를 k등분해 k번 학습·평가한 뒤 평균내는 방법.',x:'단일 분할의 <b>우연</b>을 제거한다. 반드시 <b>평균 ± 표준편차</b>로 보고할 것.'},
+ {t:'기준선',e:'Baseline, DummyRegressor',h:1,d:'평균만 찍는 등 <b>가장 단순한 예측</b>. 모델이 의미 있는지 판단하는 기준.',x:'R² ≈ 0이 나온다. 이걸 못 이기면 그 모델은 쓸 이유가 없다.'},
+ {t:'잔차',e:'residual',d:'실제값 − 예측값. 모델이 설명하지 못한 부분.',x:'예측값 대 잔차 산점도를 그리면 지표 숫자보다 많은 걸 알 수 있다(깔때기 모양 = 분산 불균일, 곡선 = 비선형 놓침).'},
+]},
+{g:'eval',cat:'J. 하이퍼파라미터 튜닝',items:[
+ {t:'GridSearchCV',e:'GridSearchCV',h:1,d:'후보 조합을 <b>전수 탐색</b>하면서 교차검증으로 평가해 최적을 고르는 도구.',x:'조합 수 = 각 후보 개수의 곱 × cv. 후보가 많으면 기하급수적으로 느려진다.'},
+ {t:'param_grid',e:'param_grid',h:1,d:'탐색할 하이퍼파라미터 후보들을 담은 딕셔너리.',x:'<code>{\'ridge__alpha\': [0.1, 1, 10, 100]}</code> 형태.'},
+ {t:'단계이름__파라미터',e:'double underscore',h:1,d:'Pipeline 안의 특정 단계에 파라미터를 지정하는 문법. <b>언더스코어 2개.</b>',x:'<code>Pipeline([(\'ridge\', Ridge())])</code> 라면 <code>\'ridge__alpha\'</code>. <code>make_pipeline</code>을 쓰면 이름이 소문자 클래스명으로 자동 생성된다.'},
+ {t:'scoring',e:'scoring',h:1,d:'무엇을 기준으로 최적을 고를지 정하는 지표.',x:'<code>\'r2\'</code>, <code>\'neg_mean_squared_error\'</code>. 오차 지표는 "클수록 좋다"로 통일하려고 <code>neg_</code>가 붙는다.'},
+ {t:'cv',e:'cv',h:1,d:'교차검증 fold 수. <code>cv=5</code>면 5등분해 5번 평가.',x:'클수록 안정적이지만 느리다. 5 또는 10이 표준.'},
+ {t:'best_params_ / best_score_',e:'best_*',h:1,d:'탐색 결과 최적 조합과 그때의 <b>교차검증</b> 점수.',x:'<code>best_score_</code>는 CV 점수이지 테스트 점수가 아니다. 헷갈리지 말 것.'},
+ {t:'best_estimator_',e:'best_estimator_',h:1,d:'최적 조합으로 <b>전체 train 데이터에 다시 학습된</b> 모델.',x:'<code>refit=True</code>(기본)일 때 자동 생성. 바로 <code>predict()</code>에 쓸 수 있다.'},
+ {t:'RandomizedSearchCV',e:'RandomizedSearchCV',d:'후보를 무작위로 n번만 뽑아 탐색. 후보가 많을 때 Grid보다 효율적.',x:'<code>n_iter</code>로 시도 횟수를 직접 정한다.'},
+]},
+];
+
+const out=document.getElementById('out'), toc=document.getElementById('toc');
+const GN={basic:'기초 개념', reg:'규제와 과적합', data:'데이터 준비', algo:'알고리즘별 개념', eval:'평가와 튜닝'};
+let filt='all', qtext='';
+const TOTAL=D.reduce((a,s)=>a+s.items.length,0);
+document.getElementById('nterm').textContent='용어 '+TOTAL+'개';
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function slug(c){return c.replace(/[^a-zA-Z0-9가-힣]/g,'-');}
+
+function build(){
+  out.innerHTML=''; toc.innerHTML='';
+  let curG=null, shown=0;
+  const q=qtext.trim().toLowerCase();
+  D.forEach(sec=>{
+    if(['basic','reg','data','algo','eval'].includes(filt) && sec.g!==filt) return;
+    let items=sec.items;
+    if(filt==='hot') items=items.filter(i=>i.h);
+    if(q) items=items.filter(i=>(i.t+' '+i.e+' '+i.d+' '+i.x+' '+sec.cat).toLowerCase().includes(q));
+    if(!items.length) return;
+    shown+=items.length;
+    if(sec.g!==curG){
+      curG=sec.g;
+      const h=document.createElement('h2'); h.className='grp'; h.id=curG;
+      h.textContent=GN[curG]; out.appendChild(h);
+    }
+    const id=slug(sec.cat);
+    const a=document.createElement('a'); a.href='#'+id; a.textContent=sec.cat; toc.appendChild(a);
+    const h3=document.createElement('h3'); h3.className='cat'; h3.id=id;
+    h3.innerHTML='<span>'+sec.cat+'</span>'; out.appendChild(h3);
+    items.forEach(it=>{
+      const div=document.createElement('div');
+      div.className='term';
+      div.innerHTML='<div><span class="t">'+esc(it.t)+'</span>'+
+        '<span class="en">'+esc(it.e)+'</span>'+(it.h?'<span class="star">핵심</span>':'')+'</div>'+
+        '<div class="d">'+it.d+'</div>'+(it.x?'<div class="x">'+it.x+'</div>':'');
+      div.addEventListener('click',()=>{ if(document.body.classList.contains('cards')) div.classList.toggle('open'); });
+      out.appendChild(div);
+    });
+  });
+  if(!shown) out.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+  ['개념 지도|map','핵심 구분|key','alpha 실측|alpha','성능 비교|perf','시험 단골|qa'].forEach(s=>{
+    const [n,i]=s.split('|');
+    const a=document.createElement('a'); a.href='#'+i; a.textContent='▸ '+n; toc.appendChild(a);
+  });
+  document.getElementById('cnt').textContent=shown+' / '+TOTAL+'개 표시';
+}
+document.getElementById('q').addEventListener('input',e=>{qtext=e.target.value;build();});
+document.querySelectorAll('.chip[data-f]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-f]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true'); filt=c.dataset.f; build();
+}));
+document.getElementById('cardbtn').addEventListener('click',e=>{
+  const on=document.body.classList.toggle('cards');
+  e.target.setAttribute('aria-pressed', on?'true':'false');
+  e.target.textContent = on ? '암기 모드 끄기' : '암기 모드';
+  if(!on) document.querySelectorAll('.term.open').forEach(t=>t.classList.remove('open'));
+});
+build();
+</script>
+</body>
+</html>

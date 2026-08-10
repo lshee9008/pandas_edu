@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pandas · NumPy 실무 레퍼런스 &amp; 파이프라인 아키텍처</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f7f7f5; --bg3:#efeee9;
+  --fg:#1f1f1d; --fg2:#5f5e5a; --fg3:#8b8a84;
+  --line:#e2e1db; --line2:#cfcec7;
+  --acc:#0f6e56; --acc-bg:#e1f5ee;
+  --warn:#854f0b; --warn-bg:#faeeda;
+  --dang:#a32d2d; --dang-bg:#fcebeb;
+  --code-bg:#f4f3ef;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18; --bg2:#222220; --bg3:#2b2b28;
+    --fg:#eceae4; --fg2:#a8a69f; --fg3:#7a7973;
+    --line:#33332f; --line2:#454540;
+    --acc:#5dcaa5; --acc-bg:#0f3d31;
+    --warn:#efb45c; --warn-bg:#3d2c0e;
+    --dang:#f09595; --dang-bg:#3d1616;
+    --code-bg:#131312;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:120px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+     font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 100px}
+
+header.hero{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+header.hero h1{margin:0 0 8px;font-size:27px;font-weight:600;letter-spacing:-.02em}
+header.hero p{margin:0 0 14px;color:var(--fg2);font-size:14px}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;
+       background:var(--bg3);color:var(--fg2);border:1px solid var(--line)}
+.badge.ok{background:var(--acc-bg);color:var(--acc);border-color:transparent}
+
+/* ---------- toolbar ---------- */
+.toolbar{position:sticky;top:0;z-index:50;background:var(--bg);
+         border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:8px}
+.toolbar .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#q{flex:1;min-width:220px;padding:9px 12px;font-size:14px;font-family:var(--sans);
+   border:1px solid var(--line2);border-radius:8px;background:var(--bg2);color:var(--fg)}
+#q:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.chip{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:20px;
+      background:var(--bg2);color:var(--fg2);cursor:pointer;user-select:none;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--acc-bg);color:var(--acc);border-color:transparent;font-weight:600}
+.btn{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:8px;
+     background:var(--bg2);color:var(--fg);cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+.btn.primary:disabled{opacity:.4;cursor:not-allowed;background:var(--bg3);color:var(--fg3);border-color:var(--line2)}
+.count{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.count b{color:var(--acc)}
+
+/* ---------- nav ---------- */
+nav.toc{display:flex;gap:5px;flex-wrap:wrap;padding:12px 0 4px;border-bottom:1px solid var(--line);margin-bottom:28px}
+nav.toc a{font-size:12px;padding:4px 9px;border-radius:6px;color:var(--fg2);
+          text-decoration:none;background:var(--bg2);border:1px solid var(--line)}
+nav.toc a:hover{color:var(--acc);border-color:var(--acc)}
+
+/* ---------- sections ---------- */
+h2.lib{margin:44px 0 4px;font-size:22px;font-weight:600;letter-spacing:-.01em;
+       padding-bottom:8px;border-bottom:2px solid var(--fg)}
+h3.cat{margin:30px 0 10px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px}
+h3.cat::after{content:"";flex:1;height:1px;background:var(--line)}
+.cat-note{font-size:13px;color:var(--fg2);margin:-4px 0 12px}
+
+.item{display:grid;grid-template-columns:24px 1fr;gap:0 10px;
+      padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+      margin-bottom:7px;background:var(--bg2)}
+.item.sel{border-color:var(--acc);background:var(--acc-bg)}
+.item input[type=checkbox]{width:15px;height:15px;margin-top:5px;accent-color:var(--acc);cursor:pointer}
+.item .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.item .nm{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--acc)}
+.item .ds{font-size:13.5px;color:var(--fg2)}
+.item .tag{font-size:10.5px;padding:1px 6px;border-radius:4px;font-weight:600;letter-spacing:.02em}
+.tag.hot{background:var(--acc-bg);color:var(--acc)}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.avoid{background:var(--dang-bg);color:var(--dang)}
+.item pre{margin:8px 0 0;padding:10px 12px;background:var(--code-bg);border-radius:7px;
+          overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+          border:1px solid var(--line)}
+.item pre code{white-space:pre}
+.cmt{color:var(--fg3)}
+
+/* ---------- architecture ---------- */
+.arch{margin-top:14px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:18px 0 10px}
+.stage{flex:1 1 118px;min-width:118px;padding:11px 12px;border-radius:9px;
+       border:1px solid var(--line2);background:var(--bg2)}
+.stage .n{font-size:10.5px;font-family:var(--mono);color:var(--fg3);display:block}
+.stage .t{font-size:13.5px;font-weight:600;display:block;margin:2px 0 3px}
+.stage .s{font-size:11.5px;color:var(--fg2);line-height:1.45}
+.stage.g1{border-color:#5dcaa5}.stage.g2{border-color:#7f77dd}.stage.g3{border-color:#ef9f27}
+
+pre.block{padding:15px 17px;background:var(--code-bg);border:1px solid var(--line);
+          border-radius:9px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12.5px;color:var(--fg2);background:var(--bg2)}
+td code,p code,li code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);
+                       padding:1.5px 5px;border-radius:4px}
+.callout{padding:13px 16px;border-radius:9px;margin:16px 0;font-size:13.5px;border:1px solid}
+.callout.good{background:var(--acc-bg);border-color:transparent}
+.callout.warn{background:var(--warn-bg);border-color:transparent}
+.callout.bad{background:var(--dang-bg);border-color:transparent}
+.callout > b:first-child{display:block;margin-bottom:6px;font-size:14px}
+.callout ol{margin:0;padding-left:20px}
+.callout ol li{margin-bottom:6px}
+.callout ol li:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.empty{padding:40px;text-align:center;color:var(--fg3);font-size:14px}
+
+/* ---------- basket ---------- */
+#basket{position:fixed;right:20px;bottom:20px;width:min(430px,calc(100vw - 40px));
+        max-height:64vh;background:var(--bg);border:1px solid var(--line2);
+        border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);display:none;
+        flex-direction:column;z-index:100}
+#basket.on{display:flex}
+#basket .bh{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;
+            justify-content:space-between;align-items:center;font-size:13.5px;font-weight:600}
+#basket pre{margin:0;padding:14px;overflow:auto;font-family:var(--mono);
+            font-size:12px;line-height:1.6;flex:1;background:var(--code-bg)}
+#basket .bf{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px}
+.x{cursor:pointer;color:var(--fg3);font-size:18px;line-height:1;background:none;border:none}
+
+@media print{
+  .toolbar,nav.toc,#basket,.item input{display:none}
+  .item{break-inside:avoid;background:#fff}
+  body{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Pandas · NumPy 실무 레퍼런스</h1>
+  <p>체크박스로 필요한 것만 골라 담고 <b>선택 복사</b>를 누르면 주석 달린 코드 묶음이 클립보드로 나옵니다. 하단에 파이프라인 아키텍처 틀이 있습니다.</p>
+  <div class="badges">
+    <span class="badge">pandas 2.3.3</span>
+    <span class="badge">numpy 2.2.6</span>
+    <span class="badge">scikit-learn 1.7.2</span>
+    <span class="badge ok">전 항목 실행 검증 완료</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="row">
+    <input id="q" type="search" placeholder="검색 — 함수명·설명·코드 전체 (예: 결측, groupby, merge, 이상치)" autocomplete="off">
+    <button class="chip" data-lib="all" aria-pressed="true">전체</button>
+    <button class="chip" data-lib="numpy" aria-pressed="false">NumPy</button>
+    <button class="chip" data-lib="pandas" aria-pressed="false">Pandas</button>
+    <button class="chip" data-lib="hot" aria-pressed="false">★ 핵심만</button>
+    <span class="count"><b id="nsel">0</b>개 선택</span>
+    <button class="btn primary" id="show" disabled>선택 복사</button>
+    <button class="btn" id="clr">해제</button>
+  </div>
+</div>
+
+<nav class="toc" id="toc"></nav>
+
+<main id="out"></main>
+
+<!-- ================= 아키텍처 ================= -->
+<section class="arch">
+<h2 class="lib" id="arch">파이프라인 아키텍처 기본 틀</h2>
+<p class="cat-note">아래 구조는 실제로 실행해 동작을 확인한 것입니다. 데이터 종류가 바뀌어도 뼈대는 그대로 두고 각 단계 함수의 내용만 교체하면 됩니다.</p>
+
+<h3 class="cat">1. 전체 흐름</h3>
+<div class="flow">
+  <div class="stage g1"><span class="n">01</span><span class="t">수집</span><span class="s">ingest()<br>원본을 있는 그대로</span></div>
+  <div class="stage g1"><span class="n">02</span><span class="t">검증</span><span class="s">validate()<br>스키마·범위 게이트</span></div>
+  <div class="stage g1"><span class="n">03</span><span class="t">정제</span><span class="s">clean()<br>결측·중복·타입</span></div>
+  <div class="stage g1"><span class="n">04</span><span class="t">파생변수</span><span class="s">add_features()<br>행 단위 계산만</span></div>
+</div>
+<div class="flow">
+  <div class="stage g2"><span class="n">05</span><span class="t">분할</span><span class="s">train_test_split<br>여기서부터 누수 주의</span></div>
+  <div class="stage g2"><span class="n">06</span><span class="t">전처리</span><span class="s">sklearn Pipeline<br>스케일·인코딩·대체</span></div>
+  <div class="stage g2"><span class="n">07</span><span class="t">학습·평가</span><span class="s">CV → 최종 fit</span></div>
+  <div class="stage g3"><span class="n">08</span><span class="t">저장·추론</span><span class="s">Pipeline 통째 저장</span></div>
+</div>
+
+<div class="callout good">
+  <b>이 구조의 핵심 규칙 3가지</b>
+  <ol>
+    <li><b>04번까지는 y를 보지 않는다</b> — 행 하나만 보고 계산되는 파생변수만 여기서 만든다. 전체 평균·최댓값·타깃 통계가 들어가면 그 순간 데이터 누수다.</li>
+    <li><b>05번 이후의 모든 변환은 sklearn Pipeline 안에 넣는다</b> — 그래야 CV의 각 fold와 테스트셋에서 <code>fit</code>이 자동으로 train에만 적용된다.</li>
+    <li><b>저장할 때는 모델이 아니라 Pipeline을 저장한다</b> — 스케일러·인코더가 빠지면 그 모델은 영원히 복원 불가능하다.</li>
+  </ol>
+</div>
+
+<h3 class="cat">2. 폴더 구조</h3>
+<pre class="block"><code>project/
+├── config/
+│   └── config.yaml          <span class="cmt"># 경로·하이퍼파라미터·컬럼 목록 (코드 밖으로)</span>
+├── data/
+│   ├── raw/                 <span class="cmt"># 원본. 절대 수정 금지, git에는 올리지 않음</span>
+│   ├── interim/             <span class="cmt"># 중간 산출물 (정제 후). 디버깅용</span>
+│   └── processed/           <span class="cmt"># 학습 입력 최종본 (parquet 권장)</span>
+├── src/
+│   ├── config.py            <span class="cmt"># 설정 로드 → dataclass</span>
+│   ├── ingest.py            <span class="cmt"># 01 수집</span>
+│   ├── validate.py          <span class="cmt"># 02 검증 게이트</span>
+│   ├── clean.py             <span class="cmt"># 03 정제</span>
+│   ├── features.py          <span class="cmt"># 04 파생변수</span>
+│   ├── pipeline.py          <span class="cmt"># 06 전처리 Pipeline 정의</span>
+│   ├── train.py             <span class="cmt"># 05·07 분할·학습·평가</span>
+│   └── predict.py           <span class="cmt"># 08 추론 진입점</span>
+├── models/                  <span class="cmt"># *.joblib (Pipeline 통째)</span>
+├── reports/                 <span class="cmt"># 지표·그림</span>
+├── notebooks/               <span class="cmt"># 탐색 전용. 여기 코드는 src로 승격시켜 사용</span>
+└── tests/</code></pre>
+
+<div class="callout warn">
+  <b>노트북과 src의 역할 분리</b>
+  노트북은 <b>탐색·확인</b>용이고, 확정된 로직은 <code>src/</code>의 함수로 옮깁니다. 노트북이 길어질수록 셀 실행 순서에 따라 결과가 달라져 재현이 불가능해집니다. 노트북에서는 <code>from src.clean import clean</code>처럼 불러다 쓰세요.
+</div>
+
+<h3 class="cat">3. 코드 템플릿</h3>
+<p class="cat-note">각 단계가 <code>DataFrame in → DataFrame out</code>인 순수 함수라, 어느 단계든 따로 떼어 테스트할 수 있습니다.</p>
+<pre class="block"><code><span class="cmt">"""src/train.py — 전 단계를 잇는 실행 진입점"""</span>
+from __future__ import annotations
+import logging, joblib, numpy as np, pandas as pd
+from dataclasses import dataclass
+from pathlib import Path
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s | %(message)s')
+
+<span class="cmt"># ---------- 설정: 코드 안에 상수를 흩뿌리지 않는다 ----------</span>
+@dataclass(frozen=True)
+class Config:
+    target:    str   = 'survived'
+    test_size: float = 0.2
+    seed:      int   = 42
+    num_cols:  tuple = ('age', 'fare', 'sibsp')
+    cat_cols:  tuple = ('sex', 'pclass', 'embarked')
+    out_dir:   Path  = Path('models')
+
+<span class="cmt"># ---------- 01. 수집: 원본을 그대로 읽기만 ----------</span>
+def ingest(cfg) -&gt; pd.DataFrame:
+    return pd.read_csv('data/raw/train.csv')
+
+<span class="cmt"># ---------- 02. 검증: 여기서 막히면 아래로 못 내려간다 ----------</span>
+def validate(df, cfg) -&gt; pd.DataFrame:
+    required = set(cfg.num_cols) | set(cfg.cat_cols) | {cfg.target}
+    missing  = required - set(df.columns)
+    assert not missing,               f'컬럼 누락: {missing}'
+    assert len(df) &gt; 0,               '빈 데이터'
+    assert df[cfg.target].notna().any(), '타깃 전체 결측'
+    log.info(f'검증 통과 | shape={df.shape} 결측률={df.isna().mean().mean():.1%}')
+    return df
+
+<span class="cmt"># ---------- 03. 정제: 되돌릴 수 있는 변환만 ----------</span>
+def clean(df, cfg) -&gt; pd.DataFrame:
+    return (df
+            .dropna(subset=[cfg.target])
+            .drop_duplicates()
+            .assign(**{cfg.target: lambda d: d[cfg.target].astype(int)})
+            .reset_index(drop=True))
+
+<span class="cmt"># ---------- 04. 파생변수: 행 하나만 보고 계산되는 것만 ----------</span>
+def add_features(df) -&gt; pd.DataFrame:
+    return df.assign(
+        family_size = lambda d: d.sibsp.fillna(0) + 1,
+        is_alone    = lambda d: (d.sibsp.fillna(0) == 0).astype(int),
+        log_fare    = lambda d: np.log1p(d.fare),
+    )
+    <span class="cmt"># 금지 예: d.fare / d.fare.mean()  ← 전체 평균은 누수</span>
+
+<span class="cmt"># ---------- 06. 전처리 Pipeline: 컬럼 종류별로 갈라서 처리 ----------</span>
+def build_pipeline(cfg) -&gt; Pipeline:
+    num = Pipeline([('imp', SimpleImputer(strategy='median')),
+                    ('sc',  StandardScaler())])
+    cat = Pipeline([('imp', SimpleImputer(strategy='most_frequent')),
+                    ('oh',  OneHotEncoder(handle_unknown='ignore', drop='if_binary'))])
+    pre = ColumnTransformer(
+        [('num', num, list(cfg.num_cols) + ['family_size', 'log_fare']),
+         ('cat', cat, list(cfg.cat_cols))],
+        remainder='drop')                <span class="cmt"># 명시 안 한 컬럼은 버림</span>
+    return Pipeline([('pre',   pre),
+                     ('model', RandomForestClassifier(n_estimators=200,
+                                                      random_state=cfg.seed))])
+
+<span class="cmt"># ---------- 05·07·08. 분할 → 평가 → 저장 ----------</span>
+def run(cfg = Config()):
+    df = add_features(clean(validate(ingest(cfg), cfg), cfg))
+    X, y = df.drop(columns=cfg.target), df[cfg.target]
+
+    Xtr, Xte, ytr, yte = train_test_split(
+        X, y, test_size=cfg.test_size, stratify=y, random_state=cfg.seed)
+
+    pipe = build_pipeline(cfg)
+
+    <span class="cmt"># CV: fold마다 전처리를 train에만 fit → 누수 원천 차단</span>
+    cv = cross_val_score(pipe, Xtr, ytr, scoring='roc_auc',
+                         cv=StratifiedKFold(5, shuffle=True, random_state=cfg.seed))
+    log.info(f'CV ROC-AUC = {cv.mean():.4f} ± {cv.std():.4f}')
+
+    pipe.fit(Xtr, ytr)
+    proba = pipe.predict_proba(Xte)[:, 1]
+    log.info(f'Test ROC-AUC = {roc_auc_score(yte, proba):.4f}')
+    print(classification_report(yte, pipe.predict(Xte), digits=4))
+
+    <span class="cmt"># 모델만이 아니라 설정까지 함께 저장 → 나중에 재현 가능</span>
+    cfg.out_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump({'pipeline': pipe, 'config': cfg, 'columns': list(X.columns)},
+                cfg.out_dir / 'model.joblib')
+
+if __name__ == '__main__':
+    run()</code></pre>
+
+<pre class="block"><code><span class="cmt">"""src/predict.py — 저장한 Pipeline은 원본 스키마를 그대로 받는다"""</span>
+import joblib, pandas as pd
+
+art  = joblib.load('models/model.joblib')
+pipe = art['pipeline']
+
+new = pd.read_csv('data/raw/new.csv')          <span class="cmt"># 전처리 안 된 원본 그대로</span>
+new = add_features(clean(validate(new, art['config']), art['config']))
+
+pred  = pipe.predict(new)                       <span class="cmt"># 스케일·인코딩 자동 적용</span>
+proba = pipe.predict_proba(new)[:, 1]</code></pre>
+
+<h3 class="cat">4. 단계별 원칙</h3>
+<table>
+<thead><tr><th style="width:14%">단계</th><th style="width:31%">해야 할 일</th><th style="width:31%">하면 안 되는 일</th><th style="width:24%">검증 방법</th></tr></thead>
+<tbody>
+<tr><td><b>01 수집</b></td><td>원본을 그대로 읽고 <code>data/raw/</code>는 읽기 전용 취급</td><td>읽으면서 컬럼 삭제·이름 변경</td><td><code>df.shape</code>, <code>df.dtypes</code> 로그</td></tr>
+<tr><td><b>02 검증</b></td><td><code>assert</code>로 컬럼·행수·타깃 결측 확인</td><td>조용히 넘어가기 — 여기서 못 잡으면 끝까지 간다</td><td>일부러 컬럼 지우고 실패하는지 확인</td></tr>
+<tr><td><b>03 정제</b></td><td>중복 제거, 타입 변환, 타깃 결측 행 제거</td><td>피처 결측을 <b>여기서</b> 채우기 (평균이 전체에서 계산됨)</td><td>정제 전후 행수 로그</td></tr>
+<tr><td><b>04 파생</b></td><td>행 단위 계산 (비율, 로그, 날짜 분해, 문자열 길이)</td><td><code>mean()</code>·<code>max()</code>·타깃 인코딩 등 전체 통계</td><td>한 행만 넣어도 같은 값이 나오는지 확인</td></tr>
+<tr><td><b>05 분할</b></td><td><code>stratify=y</code>, <code>random_state</code> 고정. 시계열이면 시간 순 분할</td><td>분할 전에 스케일링·결측 대체</td><td><code>y_train.value_counts(normalize=True)</code></td></tr>
+<tr><td><b>06 전처리</b></td><td><code>ColumnTransformer</code>로 수치/범주 분리 처리</td><td>테스트셋에 <code>fit</code> 또는 <code>fit_transform</code></td><td>CV 점수와 테스트 점수 격차 확인</td></tr>
+<tr><td><b>07 평가</b></td><td>CV로 안정성 확인, 문제에 맞는 지표 선택</td><td>단일 split 정확도만 보고 결론</td><td>seed를 바꿔 재실행</td></tr>
+<tr><td><b>08 저장</b></td><td>Pipeline + 설정 + 컬럼 목록을 함께 저장</td><td>모델 객체만 저장</td><td>불러와서 원본 스키마로 <code>predict</code></td></tr>
+</tbody>
+</table>
+
+<h3 class="cat">5. 지표 선택 (07단계에서 자주 틀리는 부분)</h3>
+<table>
+<thead><tr><th style="width:22%">상황</th><th style="width:26%">쓸 지표</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td>클래스 균형 분류</td><td><code>accuracy</code>, <code>f1</code></td><td>기본값으로 무난</td></tr>
+<tr><td>불균형 분류 (사기·이상탐지)</td><td><code>average_precision</code>, <code>f1</code>, PR curve</td><td>정확도는 "전부 정상"만 찍어도 99% 나옴</td></tr>
+<tr><td>놓치면 안 되는 문제 (암 진단)</td><td><code>recall</code> (양성 클래스), 혼동행렬</td><td>거짓음성 1건의 비용이 압도적</td></tr>
+<tr><td>순위·확률이 필요</td><td><code>roc_auc</code>, <code>brier_score_loss</code></td><td>임계값에 무관한 판별력을 본다</td></tr>
+<tr><td>회귀 일반</td><td><code>MAE</code>, <code>RMSE</code></td><td>MAE는 이상치에 둔감, RMSE는 큰 오차를 벌준다</td></tr>
+<tr><td>회귀 · 값의 크기가 제각각</td><td><code>MAPE</code>, 로그 변환 후 RMSE</td><td>절대오차로는 큰 값이 지표를 지배</td></tr>
+</tbody>
+</table>
+
+<h3 class="cat">6. 자주 나오는 안티패턴</h3>
+<div class="two">
+  <div class="callout bad"><b>❌ 분할 전에 스케일링</b>
+<code>scaler.fit(X)</code> 후 split — 테스트셋의 평균·최댓값이 학습에 새어 들어갑니다.<br><br>
+✅ <code>Pipeline([('sc',StandardScaler()),('m',model)])</code> 로 묶고 <code>cross_val_score</code></div>
+
+  <div class="callout bad"><b>❌ 모델만 저장</b>
+<code>joblib.dump(model)</code> — 스케일러·인코더가 빠져 복원 불가.<br><br>
+✅ <code>joblib.dump(pipeline)</code></div>
+
+  <div class="callout bad"><b>❌ iterrows로 행 반복</b>
+10만 행에서 수십 초. 파이썬 루프는 벡터화보다 100배 이상 느립니다.<br><br>
+✅ <code>np.where</code> / <code>np.select</code> / <code>.str</code> / <code>.dt</code> 접근자</div>
+
+  <div class="callout bad"><b>❌ 반복문 안에서 concat</b>
+매번 전체를 새로 복사해 O(n²).<br><br>
+✅ 리스트에 모았다가 <code>pd.concat(chunks)</code> 한 번</div>
+
+  <div class="callout bad"><b>❌ 연쇄 인덱싱 대입</b>
+<code>df[df.a&gt;0]['b'] = 1</code> — 사본에 써서 반영 안 됩니다.<br><br>
+✅ <code>df.loc[df.a&gt;0, 'b'] = 1</code></div>
+
+  <div class="callout bad"><b>❌ 단일 split 결과로 모델 비교</b>
+테스트 100건이면 샘플 2개 차이가 2%p입니다.<br><br>
+✅ <code>cross_val_score</code> 평균 ± 표준편차로 비교</div>
+</div>
+
+<div class="callout good">
+  <b>제출 전 최종 체크리스트</b>
+  ☐ <code>random_state</code>를 split·모델·CV 전부에 고정했는가<br>
+  ☐ 테스트셋에 <code>fit</code>이 단 한 번도 호출되지 않았는가<br>
+  ☐ 파생변수에 전체 통계(<code>mean</code>, <code>max</code>, 타깃값)가 섞이지 않았는가<br>
+  ☐ 저장한 파일을 불러와 <b>원본 스키마</b>로 <code>predict</code>가 되는가<br>
+  ☐ CV 점수와 테스트 점수 격차가 CV 표준편차 안에 들어오는가<br>
+  ☐ 지표가 문제 성격에 맞는가 (불균형인데 accuracy를 보고 있지는 않은가)
+</div>
+</section>
+
+</div><!-- /wrap -->
+
+<div id="basket">
+  <div class="bh"><span>선택 항목 <span id="bn">0</span>개</span><button class="x" id="bx">✕</button></div>
+  <pre id="bp"></pre>
+  <div class="bf">
+    <button class="btn primary" id="bc" style="flex:1">클립보드로 복사</button>
+    <button class="btn" id="bd">.py로 저장</button>
+  </div>
+</div>
+
+<script>
+const D=[
+{lib:'numpy',cat:'배열 생성',note:'대부분 dtype을 명시하는 습관이 메모리와 정밀도 문제를 미리 막아줍니다.',items:[
+ {n:'np.array',h:1,d:'리스트·중첩리스트를 배열로. 항상 복사본을 만든다',c:"a = np.array([1, 2, 3], dtype=np.float32)\nm = np.array([[1, 2], [3, 4]])            # shape (2, 2)"},
+ {n:'np.asarray',d:'이미 배열이면 복사하지 않음. 함수 입력 정규화에 사용',c:"def f(x):\n    x = np.asarray(x)      # list든 array든 받아준다\n    return x * 2"},
+ {n:'np.zeros / ones / full',h:1,d:'초기값이 정해진 배열. 결과를 담을 그릇을 미리 만들 때',c:"np.zeros((3, 4))\nnp.ones(5, dtype=int)\nnp.full((2, 2), np.nan)                   # NaN으로 채우기"},
+ {n:'np.arange',h:1,d:'정수 구간. 실수 step은 부동소수 오차가 나므로 linspace를 쓸 것',c:"np.arange(10)          # 0..9\nnp.arange(0, 20, 5)    # [0, 5, 10, 15]"},
+ {n:'np.linspace',h:1,d:'구간을 n등분. 그래프 x축, 파라미터 스윕에 필수',c:"np.linspace(0, 1, 11)                    # 양 끝 포함, 11개\nnp.linspace(-3, 3, 100)                  # 곡선 그릴 때"},
+ {n:'np.eye / identity',d:'단위행렬. 선형대수·원핫 변환에 사용',c:"np.eye(3)\nnp.eye(5)[[0, 2, 4]]                     # 인덱스 → 원핫"},
+ {n:'zeros_like / ones_like',d:'기존 배열과 같은 shape·dtype으로 생성',c:"mask = np.zeros_like(arr, dtype=bool)"},
+ {n:'np.random.default_rng',h:1,d:'권장 난수 생성기. np.random.seed 방식은 구식',c:"rng = np.random.default_rng(42)\nrng.normal(0, 1, 100)          # 정규분포\nrng.integers(0, 10, 5)         # 정수 (randint 아님)\nrng.choice(['a','b'], 10, p=[.7,.3])\nrng.permutation(10)            # 섞은 인덱스"},
+]},
+{lib:'numpy',cat:'형태 변환',note:'reshape은 뷰(view)를, flatten은 복사본을 반환합니다. 이 차이가 버그의 흔한 원인입니다.',items:[
+ {n:'.shape / .ndim / .size / .dtype',h:1,d:'배열 상태 확인. 에러 나면 제일 먼저 찍어볼 것',c:"a.shape    # (120, 4)\na.ndim     # 2\na.size     # 480\na.dtype    # float64"},
+ {n:'reshape(-1)',h:1,d:'-1은 나머지를 자동 계산. sklearn 입력 맞출 때 자주 씀',c:"a.reshape(3, -1)       # 열 개수 자동\na.reshape(-1, 1)       # 열벡터 (sklearn 단일 피처)\na.reshape(-1)          # 1차원으로 펴기"},
+ {n:'ravel vs flatten',d:'ravel은 가능하면 뷰(빠름), flatten은 항상 복사본(안전)',c:"a.ravel()      # 원본과 메모리 공유할 수 있음\na.flatten()    # 항상 새 배열"},
+ {n:'.T / transpose',d:'축 뒤집기. 뷰라서 비용이 거의 없음',c:"a.T\nb.transpose(0, 2, 1)     # 3차원에서 축 지정"},
+ {n:'np.newaxis / None',h:1,d:'축 추가. 브로드캐스팅을 의도적으로 만들 때',c:"v = np.arange(3)\nv[:, None]           # (3,) -> (3, 1)\nv[:, None] - v[None, :]   # 모든 쌍의 차이 행렬"},
+ {n:'np.squeeze',d:'길이 1인 축 제거. (n,1) → (n,)',c:"np.squeeze(pred)          # (100, 1) -> (100,)"},
+ {n:'concatenate / vstack / hstack',h:1,d:'배열 이어붙이기. axis를 명시하는 게 안전',c:"np.concatenate([a, b], axis=0)   # 행 방향\nnp.vstack([a, b])                # 위아래\nnp.hstack([a, b])                # 좌우\nnp.column_stack([x, y])          # 1차원들을 열로"},
+ {n:'np.stack',d:'새 축을 만들며 쌓기. concatenate와 다름',c:"np.stack([a, b])          # (2, ...) 새 축 생성"},
+ {n:'np.split / array_split',d:'배열 나누기. array_split은 나누어떨어지지 않아도 됨',c:"np.array_split(a, 3)              # 3덩이로"},
+ {n:'np.tile / repeat',d:'tile은 통째로 반복, repeat은 원소별 반복',c:"np.tile([1,2], 3)       # [1,2,1,2,1,2]\nnp.repeat([1,2], 3)     # [1,1,1,2,2,2]"},
+]},
+{lib:'numpy',cat:'인덱싱 · 조건 선택',note:'for 루프를 쓰고 싶어질 때 여기 함수들을 먼저 떠올리세요.',items:[
+ {n:'불리언 마스크',h:1,d:'조건에 맞는 원소만. pandas 필터의 뿌리',c:"a[a > 0]\na[(a > 0) & (a < 10)]       # and/or 대신 &, | 그리고 괄호 필수\na[~np.isnan(a)]             # 결측 제거"},
+ {n:'np.where',h:1,d:'조건에 따라 두 값 중 선택. if-else의 벡터화 버전',c:"np.where(a > 0, 1, 0)                 # 3항 연산\nnp.where(np.isnan(a), 0, a)           # 결측 치환\nidx = np.where(a > 5)[0]              # 인자 1개면 인덱스 반환"},
+ {n:'np.select',h:1,d:'조건이 3개 이상일 때. if-elif-else 체인의 벡터화',c:"cond = [age < 20, age < 65]\nval  = ['청년', '성인']\ngrp  = np.select(cond, val, default='노년')"},
+ {n:'np.clip',h:1,d:'상하한으로 자르기. 이상치 완화(winsorizing)에 사용',c:"np.clip(a, 0, 100)\nnp.clip(x, np.percentile(x,1), np.percentile(x,99))"},
+ {n:'팬시 인덱싱',d:'인덱스 배열로 여러 원소를 한 번에 선택',c:"a[[0, 3, 5]]\nm[[0, 2], :]                # 특정 행들\nm[np.argsort(scores)[::-1][:5]]   # 상위 5개 행"},
+ {n:'np.take / put',d:'축을 지정한 인덱싱. 다차원에서 명확함',c:"np.take(m, [0, 2], axis=1)   # 0, 2번 열"},
+ {n:'np.digitize',d:'값을 구간 번호로. 수치 → 등급 변환',c:"np.digitize([1, 5, 9], bins=[0, 3, 6])   # [1, 2, 3]"},
+]},
+{lib:'numpy',cat:'연산 · 브로드캐스팅',note:'브로드캐스팅은 넘파이 성능의 핵심이자 shape 에러의 주범입니다.',items:[
+ {n:'브로드캐스팅',h:1,d:'shape이 다른 배열끼리 자동 확장. 뒤 축부터 맞춰본다',c:"a = np.arange(3)[:, None]     # (3, 1)\nb = np.arange(4)[None, :]     # (1, 4)\na + b                         # (3, 4) 자동 확장\nX - X.mean(axis=0)            # 열별 중심화 (표준화의 원리)"},
+ {n:'@ / np.dot / matmul',h:1,d:'행렬곱. 회귀·신경망의 기본 연산',c:"X @ w                    # (n,p) @ (p,) -> (n,)\nnp.dot(a, b)\nX.T @ X                  # 그람 행렬"},
+ {n:'np.log1p / expm1',h:1,d:'log(1+x), exp(x)-1. 0 근처에서 정밀도 손실 없음',c:"np.log1p(fare)          # 0이 있어도 -inf가 안 남\nnp.expm1(pred_log)      # 역변환"},
+ {n:'exp / log / sqrt / power',d:'원소별 수학 함수. 전부 벡터화되어 있음',c:"np.exp(z) / np.exp(z).sum()      # softmax\nnp.sqrt(((a - b) ** 2).sum())    # 유클리드 거리"},
+ {n:'round / floor / ceil',d:'반올림. np.round는 은행가 반올림(0.5를 짝수로)',c:"np.round(a, 2)\nnp.floor(a); np.ceil(a)"},
+ {n:'np.einsum',d:'축 이름으로 임의의 텐서 연산. 익숙해지면 가장 강력',c:"np.einsum('ij,jk->ik', A, B)     # 행렬곱\nnp.einsum('ij,ij->i', A, B)      # 행별 내적"},
+ {n:'np.abs / sign / mod',d:'절댓값·부호·나머지',c:"np.abs(y - yhat).mean()          # MAE"},
+]},
+{lib:'numpy',cat:'통계 · 집계',note:'axis=0은 "행 방향으로 눌러서 열별 결과", axis=1은 그 반대입니다. 헷갈리면 shape을 찍어보세요.',items:[
+ {n:'sum / mean / std / var',h:1,d:'axis 지정이 핵심. keepdims는 브로드캐스팅용',c:"X.mean(axis=0)              # 열별 평균 (피처별)\nX.mean(axis=1)              # 행별 평균 (샘플별)\nX.mean(axis=0, keepdims=True)  # (1, p) 형태 유지\nX.std(ddof=1)               # 표본 표준편차 (기본은 ddof=0)"},
+ {n:'min / max / argmin / argmax',h:1,d:'arg 계열은 값이 아닌 인덱스를 반환',c:"a.max(axis=0)\na.argmax()                       # 최댓값 위치\nnp.argmax(proba, axis=1)         # 다중분류 예측 라벨"},
+ {n:'median / percentile / quantile',h:1,d:'이상치에 강한 대푯값. IQR 계산의 재료',c:"np.median(a)\nq1, q3 = np.percentile(a, [25, 75])\niqr = q3 - q1\nlo, hi = q1 - 1.5*iqr, q3 + 1.5*iqr     # 이상치 경계"},
+ {n:'nanmean / nansum / nanstd',h:1,d:'NaN을 무시하고 계산. 일반 mean은 NaN이 하나만 있어도 NaN',c:"np.nanmean(a)      # NaN 건너뜀\na.mean()           # NaN 하나면 결과 전체가 NaN"},
+ {n:'cumsum / cumprod / cummax',d:'누적 계산. 누적 기여율, 최대낙폭 등에 사용',c:"np.cumsum(evr)               # PCA 누적 설명력\nnp.cumsum(evr) >= 0.95       # 95% 넘는 지점 찾기"},
+ {n:'argsort / sort',h:1,d:'argsort는 정렬 순서 인덱스. Top-K 추출의 정석',c:"np.sort(a)\nidx = np.argsort(-scores)[:10]     # 상위 10개 (내림차순)\nnames[idx]"},
+ {n:'np.corrcoef / cov',d:'상관·공분산 행렬. 행이 변수인 점에 주의',c:"np.corrcoef(X, rowvar=False)     # 열이 변수일 때"},
+ {n:'histogram / bincount',d:'도수 분포. bincount는 정수 라벨 개수 세기에 빠름',c:"cnt, edges = np.histogram(a, bins=20)\nnp.bincount(y)                   # 클래스별 개수"},
+]},
+{lib:'numpy',cat:'검사 · 논리',note:'',items:[
+ {n:'np.isnan / isfinite / isinf',h:1,d:'결측·무한대 탐지. 학습 전 필수 점검',c:"np.isnan(X).any()                 # 결측 있나\nnp.isfinite(X).all()              # 전부 정상값인가\nX[~np.isfinite(X)] = 0"},
+ {n:'np.all / any',h:1,d:'조건 전체/일부 만족 확인. assert와 함께',c:"assert np.all(X >= 0), '음수 존재'\nnp.any(y == 1)"},
+ {n:'np.isin',d:'포함 여부 검사. pandas isin의 원형',c:"np.isin(labels, ['a', 'b'])"},
+ {n:'np.unique',h:1,d:'고윳값. return_counts로 분포까지 한 번에',c:"vals, cnts = np.unique(y, return_counts=True)\nnp.unique(y, return_inverse=True)   # 라벨 인코딩"},
+ {n:'np.allclose / isclose',h:1,d:'부동소수 비교. == 로 비교하면 안 됨',c:"np.allclose(a, b)              # 오차 허용 비교\nassert np.allclose(X.mean(0), 0, atol=1e-7)"},
+ {n:'np.count_nonzero',d:'참인 개수 세기. sum보다 의도가 명확',c:"np.count_nonzero(y_pred != y_true)   # 오분류 개수"},
+ {n:'np.searchsorted',d:'정렬된 배열에서 삽입 위치 이진탐색',c:"np.searchsorted(bins, values)"},
+]},
+{lib:'numpy',cat:'선형대수',note:'역행렬을 직접 구하지 말고 solve를 쓰세요. 수치적으로 훨씬 안정적입니다.',items:[
+ {n:'np.linalg.solve',h:1,d:'Ax=b 풀기. inv(A) @ b 보다 정확하고 빠름',c:"w = np.linalg.solve(X.T @ X, X.T @ y)    # 정규방정식"},
+ {n:'np.linalg.lstsq',h:1,d:'최소제곱. 특이행렬에서도 동작 — 회귀의 실전 해법',c:"w, res, rank, sv = np.linalg.lstsq(X, y, rcond=None)"},
+ {n:'np.linalg.norm',h:1,d:'벡터·행렬 크기. 거리와 정규화의 기본',c:"np.linalg.norm(a - b)                    # L2 거리\nnp.linalg.norm(X, axis=1, keepdims=True) # 행별 크기\nX / np.linalg.norm(X, axis=1, keepdims=True)  # 행 정규화"},
+ {n:'np.linalg.inv / det',d:'역행렬·행렬식. 가급적 solve로 대체',c:"np.linalg.inv(A)\nnp.linalg.det(A)"},
+ {n:'np.linalg.eig / svd',d:'고윳값·특이값 분해. PCA의 내부 원리',c:"vals, vecs = np.linalg.eigh(cov)   # 대칭행렬은 eigh가 빠름\nU, s, Vt = np.linalg.svd(X, full_matrices=False)"},
+]},
+{lib:'numpy',cat:'성능 · 메모리',note:'',items:[
+ {n:'dtype 축소',h:1,d:'float64 → float32로 메모리 절반. 대부분 정밀도 문제 없음',c:"X = X.astype(np.float32)          # 메모리 50% 절감\nlabels = labels.astype(np.int8)   # 0~127이면 충분"},
+ {n:'뷰 vs 복사',h:1,d:'슬라이싱은 뷰라 원본이 바뀝니다. 명시적 복사 필요',c:"v = a[:5]        # 뷰 — v를 바꾸면 a도 바뀜\nc = a[:5].copy() # 복사본\nprint(v.base is a)   # True면 뷰"},
+ {n:'out= 파라미터',d:'결과를 기존 배열에 덮어써 메모리 할당 회피',c:"np.add(a, b, out=a)      # a += b 와 같지만 명시적"},
+ {n:'np.vectorize (주의)',d:'문법 설탕일 뿐 내부는 파이썬 루프. 빠르지 않음',t:'avoid',c:"# 느림 — 실제 벡터화가 아님\nf = np.vectorize(lambda x: x*2)\n# 대신 진짜 벡터 연산을 쓸 것\na * 2"},
+]},
+
+{lib:'pandas',cat:'입출력',note:'read_csv에 dtype과 usecols를 지정하면 로딩 속도와 메모리가 크게 달라집니다.',items:[
+ {n:'read_csv',h:1,d:'가장 많이 쓰는 진입점. 옵션을 알수록 뒤 작업이 줄어듦',c:"df = pd.read_csv('data.csv',\n    usecols=['a','b','c'],        # 필요한 열만 → 메모리 절감\n    dtype={'id': 'string', 'cat': 'category'},\n    parse_dates=['date'],\n    na_values=['', 'N/A', '-', '없음'],\n    thousands=',',                # '1,234' → 1234\n    encoding='utf-8-sig',         # 한글 CSV 깨짐 방지\n    nrows=1000)                   # 먼저 맛보기"},
+ {n:'chunksize',h:1,d:'메모리에 안 들어가는 큰 파일을 조각으로 처리',c:"chunks = []\nfor chunk in pd.read_csv('big.csv', chunksize=100_000):\n    chunks.append(chunk.query('amount > 0'))\ndf = pd.concat(chunks, ignore_index=True)"},
+ {n:'read_parquet / to_parquet',h:1,d:'중간 산출물 저장의 정답. 타입 보존 + 압축 + 빠름',c:"df.to_parquet('data/processed/train.parquet', index=False)\ndf = pd.read_parquet('train.parquet', columns=['a','b'])  # 열 단위 로드"},
+ {n:'to_csv',h:1,d:'index=False를 빼먹으면 매번 열이 하나씩 늘어남',c:"df.to_csv('out.csv', index=False, encoding='utf-8-sig')"},
+ {n:'read_excel / read_sql',d:'엑셀은 sheet_name, SQL은 params로 바인딩',c:"pd.read_excel('f.xlsx', sheet_name='Sheet1', header=2)\npd.read_sql('SELECT * FROM t WHERE d > %(d)s', con, params={'d':'2024-01-01'})"},
+ {n:"dtype_backend='pyarrow'",d:'문자열·결측 처리가 빠르고 메모리 효율적',c:"df = pd.read_parquet('f.parquet', dtype_backend='pyarrow')"},
+]},
+{lib:'pandas',cat:'탐색 · 진단',note:'새 데이터를 받으면 항상 이 5줄부터 돌려보세요.',items:[
+ {n:'info / describe',h:1,d:'구조와 분포를 한눈에. include=all로 범주형까지',c:"df.info(memory_usage='deep')\ndf.describe()                    # 수치형만\ndf.describe(include='all').T     # 범주형 포함, 전치해서 보기 편하게"},
+ {n:'isna().sum() / mean()',h:1,d:'결측 개수와 비율. 전처리 계획의 출발점',c:"df.isna().sum().sort_values(ascending=False)\n(df.isna().mean() * 100).round(1)          # 결측률 %\ndf.columns[df.isna().mean() > 0.5]         # 절반 이상 빈 열"},
+ {n:'value_counts',h:1,d:'범주 분포. normalize와 dropna 옵션이 실무 포인트',c:"df.col.value_counts(normalize=True, dropna=False).head(10)\ndf.value_counts(['a','b'])       # 여러 열 조합 빈도"},
+ {n:'nunique',h:1,d:'고윳값 개수. 상수 열·ID 열 탐지',c:"df.nunique().sort_values()\ndf.columns[df.nunique() == 1]              # 값이 하나뿐인 무의미한 열\ndf.columns[df.nunique() == len(df)]        # ID로 보이는 열"},
+ {n:'duplicated().sum()',h:1,d:'중복 행 개수 확인',c:"df.duplicated().sum()\ndf[df.duplicated(subset='id', keep=False)] # 중복된 것 전부 보기"},
+ {n:'memory_usage(deep=True)',d:'실제 메모리. object 열이 범인인 경우가 대부분',c:"df.memory_usage(deep=True).sort_values(ascending=False) / 1e6  # MB"},
+ {n:'sample',d:'무작위 표본. head보다 편향이 적음',c:"df.sample(5, random_state=42)"},
+ {n:'corr',d:'상관행렬. numeric_only 지정 필요',c:"df.corr(numeric_only=True)['target'].abs().sort_values(ascending=False)"},
+]},
+{lib:'pandas',cat:'선택 · 필터',note:'loc는 라벨, iloc는 위치입니다. 이 둘을 섞지 마세요.',items:[
+ {n:'loc / iloc',h:1,d:'행·열 동시 선택. 대입할 때는 반드시 loc',c:"df.loc[df.age > 30, ['name','age']]\ndf.iloc[0:5, 0:3]                    # 위치 기반\ndf.loc[df.a > 0, 'b'] = 1            # 올바른 대입\n# df[df.a > 0]['b'] = 1              # 틀림 (사본에 씀)"},
+ {n:'query',h:1,d:'문자열 조건식. 조건이 길어질수록 가독성이 좋음',c:"df.query('age > 30 and city == \"서울\"')\nmin_age = 30\ndf.query('age > @min_age')           # @로 외부 변수 참조"},
+ {n:'isin / between',h:1,d:'다중 값 매칭과 범위 필터',c:"df[df.city.isin(['서울','부산'])]\ndf[df.age.between(20, 39)]           # 양 끝 포함\ndf[~df.city.isin(bad_list)]          # 제외"},
+ {n:'str.contains',h:1,d:'부분 문자열 필터. na=False를 빼면 결측에서 에러',c:"df[df.name.str.contains('김', na=False)]\ndf[df.email.str.contains(r'@gmail\\.', regex=True, na=False)]"},
+ {n:'where / mask',d:'조건 밖의 값을 치환. shape을 유지',c:"df.c.where(df.c > 0, 0)      # 조건이 False인 곳을 0으로\ndf.c.mask(df.c > 100, 100)   # 조건이 True인 곳을 100으로"},
+ {n:'select_dtypes',h:1,d:'타입별로 열 묶기. 전처리 파이프라인 구성에 필수',c:"num_cols = df.select_dtypes(include='number').columns\ncat_cols = df.select_dtypes(include=['object','category']).columns"},
+ {n:'filter',d:'열 이름 패턴으로 선택',c:"df.filter(like='_amt')\ndf.filter(regex=r'^(mean|worst)_')"},
+ {n:'nlargest / nsmallest',h:1,d:'상위 N개. sort_values().head()보다 빠름',c:"df.nlargest(10, 'amount')\ndf.groupby('city').amount.nlargest(3)   # 그룹별 상위 3"},
+]},
+{lib:'pandas',cat:'결측치 처리',note:'"어떻게 채울까"보다 "왜 비어 있나"를 먼저 확인하세요. 결측 자체가 정보인 경우가 많습니다.',items:[
+ {n:'fillna',h:1,d:'값 채우기. 열마다 다른 전략을 dict로',c:"df.fillna({'age': df.age.median(), 'city': '미상'})\ndf.age.fillna(df.groupby('pclass').age.transform('median'))  # 그룹별 중앙값"},
+ {n:'ffill / bfill',h:1,d:'앞/뒤 값으로 채우기. 시계열의 기본. limit로 과도한 전파 방지',c:"df.ffill(limit=3)          # 최대 3칸까지만\ndf.groupby('id').ffill()   # 그룹 경계를 넘지 않게"},
+ {n:'dropna',h:1,d:'제거. subset·thresh로 정밀 제어',c:"df.dropna(subset=['target'])        # 타깃 결측만 제거\ndf.dropna(thresh=len(df)*0.5, axis=1)  # 절반 넘게 빈 열 제거\ndf.dropna(how='all')                # 전부 빈 행만"},
+ {n:'interpolate',d:'보간. 시계열 수치에만 사용',c:"df.value.interpolate(method='linear')\ndf.set_index('date').value.interpolate(method='time')"},
+ {n:'결측 플래그',h:1,d:'채우기 전에 "비어 있었다"는 사실을 열로 남기면 성능이 오를 때가 많음',c:"df['age_was_na'] = df.age.isna().astype(int)\ndf.age = df.age.fillna(df.age.median())"},
+ {n:'replace',d:'특정 값을 결측으로 (또는 그 반대)',c:"df.replace({-999: np.nan, '': np.nan})\ndf.col.replace({'남':'M','여':'F'})"},
+]},
+{lib:'pandas',cat:'중복 · 이상치',note:'',items:[
+ {n:'drop_duplicates',h:1,d:'중복 제거. keep으로 어느 것을 남길지 결정',c:"df.drop_duplicates()\ndf.sort_values('updated_at').drop_duplicates('id', keep='last')  # 최신 것만"},
+ {n:'IQR 이상치 탐지',h:1,d:'사분위 기반. 정규분포를 가정하지 않아 안전',c:"q1, q3 = df.x.quantile([.25, .75])\niqr = q3 - q1\nlo, hi = q1 - 1.5*iqr, q3 + 1.5*iqr\nout = df[(df.x < lo) | (df.x > hi)]\ndf['x_clip'] = df.x.clip(lo, hi)      # 제거 대신 자르기"},
+ {n:'z-score 이상치',d:'정규분포일 때만. 이상치가 평균·표준편차를 오염시키는 한계가 있음',c:"z = (df.x - df.x.mean()) / df.x.std()\ndf[z.abs() > 3]"},
+ {n:'clip',h:1,d:'상하한 자르기. 제거보다 데이터 손실이 적음',c:"df.x.clip(lower=0, upper=df.x.quantile(.99))"},
+]},
+{lib:'pandas',cat:'타입 변환',note:'category dtype 하나로 메모리가 10배 줄기도 합니다.',items:[
+ {n:'astype',h:1,d:'타입 지정. 결측이 있으면 int 변환이 실패하므로 Int64 사용',c:"df.age.astype('Int64')       # 결측 허용 정수 (대문자 I)\ndf.city.astype('category')   # 메모리 대폭 절감\ndf.flag.astype(bool)"},
+ {n:'to_numeric(errors=)',h:1,d:'문자열 → 숫자. 변환 실패를 결측으로 흡수',c:"pd.to_numeric(df.price, errors='coerce')   # 실패 → NaN\ndf[pd.to_numeric(df.price, errors='coerce').isna()]  # 실패한 값 확인"},
+ {n:'to_datetime',h:1,d:'날짜 파싱. format 지정이 훨씬 빠르고 안전',c:"pd.to_datetime(df.d, format='%Y-%m-%d', errors='coerce')\npd.to_datetime(df.d, format='mixed')       # 형식이 뒤섞였을 때"},
+ {n:'convert_dtypes',d:'결측 지원 타입(Int64, string, boolean)으로 일괄 변환',c:"df = df.convert_dtypes()"},
+ {n:'get_dummies',h:1,d:'원핫 인코딩. 단 학습에는 OneHotEncoder를 쓸 것',c:"pd.get_dummies(df, columns=['city'], drop_first=True, dtype=int)\n# 주의: train/test에 따로 적용하면 열이 어긋남 → Pipeline 사용"},
+ {n:'factorize',d:'라벨 인코딩. 고유값 순서대로 정수 부여',c:"codes, uniques = pd.factorize(df.city)"},
+ {n:'cut / qcut',h:1,d:'구간화. cut은 값 기준, qcut은 개수 기준',c:"pd.cut(df.age, bins=[0,20,40,60,200], labels=['10대','20-30','40-50','60+'])\npd.qcut(df.income, 4, labels=['Q1','Q2','Q3','Q4'])   # 4분위"},
+]},
+{lib:'pandas',cat:'문자열 (.str)',note:'.str 접근자는 전부 벡터화되어 있어 apply보다 훨씬 빠릅니다.',items:[
+ {n:'기본 정제',h:1,d:'공백·대소문자 정리. 조인 전에 반드시',c:"df.name = df.name.str.strip().str.lower()\ndf.code = df.code.str.replace(r'\\s+', '', regex=True)"},
+ {n:'contains / startswith',h:1,d:'패턴 매칭. na=False 필수',c:"df.addr.str.contains('서울|경기', regex=True, na=False)\ndf.code.str.startswith('A', na=False)"},
+ {n:'split(expand=True)',h:1,d:'분리해서 여러 열로. 주소·이름 파싱에 사용',c:"df[['시','구']] = df.addr.str.split(' ', n=1, expand=True)"},
+ {n:'extract',h:1,d:'정규식 그룹 추출. 가장 강력한 파싱 도구',c:"df.title.str.extract(r'(Mr|Mrs|Miss|Master)', expand=False)\ndf.log.str.extract(r'(?P<code>\\d{3})\\s+(?P<msg>.+)')"},
+ {n:'replace(regex=True)',d:'정규식 치환',c:"df.phone.str.replace(r'[^0-9]', '', regex=True)"},
+ {n:'len / zfill / pad',d:'길이와 자릿수 맞추기',c:"df[df.code.str.len() != 5]\ndf.code = df.code.str.zfill(5)      # '123' -> '00123'"},
+ {n:'.str.cat / +',d:'문자열 결합',c:"df.a.str.cat(df.b, sep='-', na_rep='')"},
+]},
+{lib:'pandas',cat:'날짜 (.dt)',note:'',items:[
+ {n:'.dt 구성요소',h:1,d:'날짜에서 파생변수 만들기. 04단계 파생변수의 단골',c:"d = df.date.dt\ndf['year'] = d.year;  df['month'] = d.month\ndf['dow']  = d.dayofweek        # 월=0\ndf['is_weekend'] = d.dayofweek.isin([5,6]).astype(int)\ndf['hour'] = d.hour"},
+ {n:'주기성 인코딩',h:1,d:'월/시간은 순환값. 12월과 1월이 멀지 않다는 걸 알려줌',c:"df['m_sin'] = np.sin(2*np.pi*df.month/12)\ndf['m_cos'] = np.cos(2*np.pi*df.month/12)"},
+ {n:'date_range',d:'날짜 시퀀스 생성. 빠진 날짜 채우기에 사용',c:"idx = pd.date_range('2024-01-01', '2024-12-31', freq='D')\ndf.set_index('date').reindex(idx)       # 결측일 드러내기"},
+ {n:'resample',h:1,d:'시간 단위 재집계. groupby의 시계열 버전',c:"df.set_index('date').amount.resample('ME').sum()          # 월말 기준 합계\ndf.set_index('date').resample('W').agg({'amount': ['sum','mean','count']})"},
+ {n:'to_period',d:'월/분기 단위로 묶기',c:"df.date.dt.to_period('M')       # 2024-03\ndf.date.dt.to_period('Q')"},
+ {n:'Timedelta 연산',h:1,d:'기간 계산. 나이·경과일 파생',c:"(pd.Timestamp('today') - df.birth).dt.days // 365\ndf.date + pd.Timedelta(days=7)\ndf.groupby('id').date.diff().dt.days      # 재구매 간격"},
+]},
+{lib:'pandas',cat:'정렬 · 순위',note:'',items:[
+ {n:'sort_values',h:1,d:'다중 키 정렬. na_position이 실무 포인트',c:"df.sort_values(['city','amount'], ascending=[True, False])\ndf.sort_values('score', na_position='first')"},
+ {n:'rank',h:1,d:'순위 매기기. method가 동점 처리 방식',c:"df.score.rank(method='dense', ascending=False)   # 1,2,2,3\ndf.groupby('city').score.rank(pct=True)          # 그룹 내 백분위"},
+ {n:'sort_index',d:'인덱스 정렬. groupby·unstack 후 정돈',c:"df.sort_index(axis=1)      # 열 이름 순"},
+]},
+{lib:'pandas',cat:'그룹 · 집계',note:'named aggregation을 쓰면 결과 열 이름이 바로 정해져 뒤처리가 사라집니다.',items:[
+ {n:'groupby().agg() — named',h:1,d:'실무 표준 형태. 열 이름을 직접 지정',c:"df.groupby('city').agg(\n    n         = ('id',     'size'),\n    amt_sum   = ('amount', 'sum'),\n    amt_mean  = ('amount', 'mean'),\n    amt_p90   = ('amount', lambda s: s.quantile(.9)),\n    uniq_user = ('user',   'nunique'),\n).reset_index()"},
+ {n:'transform',h:1,d:'집계값을 원래 행 개수로 되돌려줌. 그룹 대비 비교에 필수',c:"df['city_mean'] = df.groupby('city').amount.transform('mean')\ndf['vs_city']   = df.amount / df.groupby('city').amount.transform('mean')\ndf['grp_z'] = df.groupby('city').amount.transform(lambda s: (s-s.mean())/s.std())"},
+ {n:'size vs count',h:1,d:'size는 결측 포함 행수, count는 결측 제외',c:"g.size()          # 전체 행수\ng.count()         # 열별 비결측 개수"},
+ {n:'groupby().filter',d:'조건을 만족하는 그룹 전체를 남김',c:"df.groupby('city').filter(lambda g: len(g) >= 30)   # 30건 이상인 도시만"},
+ {n:'apply (group_keys)',d:'그룹별 임의 처리. 느리므로 최후 수단',c:"df.groupby('city', group_keys=False)[['a','b']].apply(lambda g: g.head(3))"},
+ {n:'as_index=False',d:'결과를 평평한 DataFrame으로. reset_index 생략',c:"df.groupby('city', as_index=False).amount.sum()"},
+ {n:'observed=True',h:1,d:'category 열 그룹화 시 필수. 없으면 빈 조합이 폭증',c:"df.groupby(['cat_a','cat_b'], observed=True).size()"},
+ {n:'cumcount / rank',d:'그룹 내 순번. 첫 구매·N번째 이벤트 판별',c:"df['nth'] = df.sort_values('date').groupby('id').cumcount() + 1\nfirst = df[df.groupby('id').date.transform('min') == df.date]"},
+]},
+{lib:'pandas',cat:'결합 (merge · concat)',note:'merge에는 항상 validate를 붙이세요. 의도치 않은 행 증식을 즉시 잡아줍니다.',items:[
+ {n:'merge',h:1,d:'키 기준 결합. validate가 실무의 핵심 안전장치',c:"df.merge(other, on='id', how='left',\n         validate='m:1',        # 다대일이 아니면 에러 → 행 증식 방지\n         indicator=True,        # _merge 열로 매칭 여부 확인\n         suffixes=('', '_r'))\n\n# 결합 후 반드시 확인\nassert len(merged) == len(df), '행 증식 발생'"},
+ {n:'merge 매칭 진단',h:1,d:'조인이 왜 안 붙는지 확인하는 절차',c:"m = df.merge(other, on='id', how='left', indicator=True)\nprint(m._merge.value_counts())            # left_only가 많으면 키 문제\nset(df.id) - set(other.id)                # 안 붙은 키 확인\n# 흔한 원인: 타입 불일치(str vs int), 공백, 대소문자"},
+ {n:'concat',h:1,d:'단순 이어붙이기. df.append는 pandas 2에서 삭제됨',c:"pd.concat([df1, df2], ignore_index=True)          # 세로\npd.concat([df1, df2], axis=1)                     # 가로\npd.concat({'a': df1, 'b': df2}, names=['src'])    # 출처 표시"},
+ {n:'merge_asof',h:1,d:'가장 가까운 시점으로 결합. 시계열 조인의 정석',c:"pd.merge_asof(trades.sort_values('t'), quotes.sort_values('t'),\n              on='t', by='symbol', direction='backward',\n              tolerance=pd.Timedelta('1min'))"},
+ {n:'combine_first',d:'결측을 다른 프레임 값으로 메우며 병합',c:"df1.combine_first(df2)"},
+ {n:'join',d:'인덱스 기준 결합. merge의 축약형',c:"df.join(other.set_index('id'), on='id')"},
+]},
+{lib:'pandas',cat:'재구조화',note:'"넓은 형태 ↔ 긴 형태" 변환입니다. 시각화 라이브러리는 대개 긴 형태를 원합니다.',items:[
+ {n:'pivot_table',h:1,d:'집계하며 교차표. 중복 키가 있어도 안전',c:"df.pivot_table(index='city', columns='month', values='amount',\n               aggfunc='sum', fill_value=0, margins=True)"},
+ {n:'melt',h:1,d:'넓은 → 긴 형태. seaborn 입력 만들 때',c:"df.melt(id_vars=['id','date'], value_vars=['a','b'],\n        var_name='metric', value_name='value')"},
+ {n:'stack / unstack',d:'인덱스와 열을 맞바꿈. 다중 인덱스 정돈',c:"g = df.groupby(['city','month']).amount.sum()\ng.unstack('month', fill_value=0)      # month를 열로"},
+ {n:'crosstab',h:1,d:'빈도 교차표. 범주 간 관계 확인',c:"pd.crosstab(df.city, df.grade, normalize='index')   # 행 비율\npd.crosstab(df.pred, df.true)                       # 혼동행렬"},
+ {n:'explode',h:1,d:'리스트가 든 열을 행으로 펼침. 태그·장바구니 데이터',c:"df.assign(tag=df.tags.str.split(',')).explode('tag')"},
+ {n:'다중 인덱스 정리',d:'agg 후 생기는 계층 열 이름 평탄화',c:"df.columns = ['_'.join(c).strip('_') for c in df.columns]"},
+]},
+{lib:'pandas',cat:'윈도우 · 시계열',note:'shift/diff는 시계열 파생변수의 90%를 차지합니다.',items:[
+ {n:'rolling',h:1,d:'이동 집계. min_periods를 지정해야 앞부분이 안 날아감',c:"df.amount.rolling(7, min_periods=1).mean()\ndf.groupby('id').amount.rolling(3).mean().reset_index(0, drop=True)\ndf.rolling('7D', on='date').amount.sum()      # 시간 기준 윈도우"},
+ {n:'shift / diff / pct_change',h:1,d:'과거 값과 비교. 누수 없는 시계열 피처의 기본',c:"df['prev']   = df.groupby('id').amount.shift(1)\ndf['delta']  = df.groupby('id').amount.diff()\ndf['growth'] = df.groupby('id').amount.pct_change()"},
+ {n:'expanding',d:'누적 집계. 시점까지의 통계 (미래를 안 봄)',c:"df.groupby('id').amount.expanding().mean()"},
+ {n:'ewm',d:'지수가중이동평균. 최근값에 가중',c:"df.amount.ewm(span=7, adjust=False).mean()"},
+ {n:'cumsum / cummax',d:'누적합·누적최대. 최대낙폭 계산 등',c:"df['cum'] = df.groupby('id').amount.cumsum()\ndd = df.cum / df.cum.cummax() - 1        # 최대낙폭"},
+]},
+{lib:'pandas',cat:'변형 · 체이닝',note:'메서드 체이닝으로 쓰면 중간 변수가 사라지고 원본이 보존되어 재실행이 안전해집니다.',items:[
+ {n:'assign',h:1,d:'열 추가를 체이닝 안에서. lambda로 직전 상태 참조',c:"(df\n .assign(ratio  = lambda d: d.a / d.b,\n         is_big = lambda d: (d.ratio > 1).astype(int))   # 방금 만든 열 사용 가능\n .query('is_big == 1')\n .sort_values('ratio', ascending=False))"},
+ {n:'pipe',h:1,d:'사용자 함수를 체인에 끼워넣기. 파이프라인 구성의 핵심',c:"def drop_outliers(d, col, k=1.5):\n    q1, q3 = d[col].quantile([.25,.75]); iqr = q3-q1\n    return d[d[col].between(q1-k*iqr, q3+k*iqr)]\n\ndf.pipe(drop_outliers, 'price').pipe(add_features)"},
+ {n:'rename',h:1,d:'열 이름 정리. 공백·대문자 제거는 초반에',c:"df.rename(columns=str.lower)\ndf.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')"},
+ {n:'Series.map',h:1,d:'값 매핑. dict로 코드 → 라벨 변환',c:"df.grade.map({1:'상', 2:'중', 3:'하'})\ndf.city.map(city_pop).fillna(0)     # 외부 사전으로 피처 생성"},
+ {n:'DataFrame.map',d:'원소 단위 함수 적용. applymap은 폐기 예정',c:"df.select_dtypes('number').map(lambda v: round(v, 2))"},
+ {n:'apply(axis=1) — 주의',d:'행 단위 적용. 매우 느리므로 대안을 먼저 찾을 것',t:'warn',c:"# 느림\ndf.apply(lambda r: r.a + r.b, axis=1)\n# 빠름\ndf.a + df.b\n# 조건 분기는 np.select로\nnp.select([df.a>0, df.a<0], ['+','-'], default='0')"},
+ {n:'set_index / reset_index',d:'인덱스 왕복. drop=True를 빼먹으면 열이 남음',c:"df.set_index('date').loc['2024-03']\ndf.reset_index(drop=True)"},
+ {n:'eval',d:'문자열 수식으로 열 계산. 큰 데이터에서 메모리 효율적',c:"df.eval('margin = (revenue - cost) / revenue', inplace=False)"},
+]},
+{lib:'pandas',cat:'성능 · 메모리',note:'',items:[
+ {n:'category 변환',h:1,d:'반복되는 문자열 열의 메모리를 대폭 절감',c:"before = df.memory_usage(deep=True).sum()\nfor c in df.select_dtypes('object'):\n    if df[c].nunique() / len(df) < 0.5:\n        df[c] = df[c].astype('category')\nprint(before / df.memory_usage(deep=True).sum(), '배 절감')"},
+ {n:'downcast',h:1,d:'수치형 비트 축소',c:"df[num] = df[num].apply(pd.to_numeric, downcast='float')\ndf[ints] = df[ints].apply(pd.to_numeric, downcast='integer')"},
+ {n:'반복문 concat 회피',h:1,d:'가장 흔한 성능 함정. O(n²)에서 O(n)으로',c:"# 나쁨\nfor f in files: df = pd.concat([df, pd.read_csv(f)])\n# 좋음\ndf = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)"},
+ {n:'iterrows 회피',d:'파이썬 루프는 최후의 수단. 꼭 필요하면 itertuples',t:'avoid',c:"# 매우 느림\nfor i, r in df.iterrows(): ...\n# 그나마 나음 (namedtuple, 타입 보존)\nfor r in df.itertuples(index=False): ...\n# 최선: 벡터화\ndf['x'] = np.where(df.a > 0, df.b, df.c)"},
+ {n:'copy_on_write',d:'pandas 3 기본값. 미리 켜두면 SettingWithCopyWarning이 사라짐',c:"pd.options.mode.copy_on_write = True"},
+ {n:'표시 옵션',d:'탐색할 때 잘리는 출력 늘리기',c:"pd.set_option('display.max_columns', 100)\npd.set_option('display.width', 200)\npd.set_option('display.float_format', '{:.3f}'.format)"},
+]},
+];
+
+/* ---------------- render ---------------- */
+const out=document.getElementById('out'), toc=document.getElementById('toc');
+let selected=new Map(), filterLib='all', qtext='';
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function slug(l,c){return (l+'-'+c).replace(/[^a-zA-Z0-9가-힣]/g,'-');}
+
+function build(){
+  out.innerHTML=''; toc.innerHTML='';
+  let curLib=null, shown=0;
+  const q=qtext.trim().toLowerCase();
+
+  D.forEach(sec=>{
+    if(filterLib==='numpy'&&sec.lib!=='numpy')return;
+    if(filterLib==='pandas'&&sec.lib!=='pandas')return;
+    let items=sec.items;
+    if(filterLib==='hot') items=items.filter(i=>i.h);
+    if(q) items=items.filter(i=>(i.n+' '+i.d+' '+i.c+' '+sec.cat).toLowerCase().includes(q));
+    if(!items.length)return;
+    shown+=items.length;
+
+    if(sec.lib!==curLib){
+      curLib=sec.lib;
+      const h=document.createElement('h2');
+      h.className='lib'; h.id=curLib;
+      h.textContent = curLib==='numpy' ? 'NumPy' : 'Pandas';
+      out.appendChild(h);
+    }
+    const id=slug(sec.lib,sec.cat);
+    const a=document.createElement('a'); a.href='#'+id;
+    a.textContent=(sec.lib==='numpy'?'np · ':'pd · ')+sec.cat; toc.appendChild(a);
+
+    const h3=document.createElement('h3'); h3.className='cat'; h3.id=id;
+    h3.innerHTML='<span>'+sec.cat+'</span>'; out.appendChild(h3);
+    if(sec.note){const p=document.createElement('p');p.className='cat-note';p.textContent=sec.note;out.appendChild(p);}
+
+    items.forEach(it=>{
+      const key=sec.lib+'|'+it.n;
+      const div=document.createElement('div');
+      div.className='item'+(selected.has(key)?' sel':'');
+      const tag = it.t==='avoid' ? '<span class="tag avoid">피할 것</span>'
+                : it.t==='warn'  ? '<span class="tag warn">주의</span>'
+                : it.h          ? '<span class="tag hot">핵심</span>' : '';
+      div.innerHTML=
+        '<input type="checkbox" '+(selected.has(key)?'checked':'')+' aria-label="'+esc(it.n)+' 선택">'+
+        '<div><div class="hd"><span class="nm">'+esc(it.n)+'</span>'+tag+
+        '<span class="ds">'+esc(it.d)+'</span></div>'+
+        '<pre><code>'+esc(it.c)+'</code></pre></div>';
+      div.querySelector('input').addEventListener('change',e=>{
+        if(e.target.checked){selected.set(key,{cat:sec.cat,lib:sec.lib,...it});div.classList.add('sel');}
+        else{selected.delete(key);div.classList.remove('sel');}
+        upd();
+      });
+      out.appendChild(div);
+    });
+  });
+  if(!shown) out.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+  const a=document.createElement('a'); a.href='#arch'; a.textContent='▸ 파이프라인 아키텍처'; toc.appendChild(a);
+}
+
+function upd(){
+  const n=selected.size;
+  document.getElementById('nsel').textContent=n;
+  document.getElementById('show').disabled=!n;
+  document.getElementById('bn').textContent=n;
+  if(!n) document.getElementById('basket').classList.remove('on');
+  else document.getElementById('bp').textContent=snippet();
+}
+
+function snippet(){
+  const g={};
+  selected.forEach(v=>{(g[v.lib+' — '+v.cat] ||= []).push(v);});
+  let s='import numpy as np\nimport pandas as pd\n';
+  Object.entries(g).forEach(([k,arr])=>{
+    s+='\n\n# '+'='.repeat(60)+'\n# '+k+'\n# '+'='.repeat(60)+'\n';
+    arr.forEach(v=>{s+='\n# ['+v.n+'] '+v.d+'\n'+v.c+'\n';});
+  });
+  return s;
+}
+
+document.getElementById('q').addEventListener('input',e=>{qtext=e.target.value;build();});
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true'); filterLib=c.dataset.lib; build();
+}));
+document.getElementById('clr').addEventListener('click',()=>{selected.clear();build();upd();});
+document.getElementById('show').addEventListener('click',()=>{
+  document.getElementById('bp').textContent=snippet();
+  document.getElementById('basket').classList.add('on');
+});
+document.getElementById('bx').addEventListener('click',()=>document.getElementById('basket').classList.remove('on'));
+document.getElementById('bc').addEventListener('click',async e=>{
+  try{await navigator.clipboard.writeText(snippet());e.target.textContent='복사됨 ✓';}
+  catch{e.target.textContent='복사 실패 — 직접 선택하세요';}
+  setTimeout(()=>e.target.textContent='클립보드로 복사',1600);
+});
+document.getElementById('bd').addEventListener('click',()=>{
+  const b=new Blob([snippet()],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='snippets.py'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+build(); upd();
+</script>
+</body>
+</html>
