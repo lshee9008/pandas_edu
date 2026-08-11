@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KNN · 결정 트리 정리 + 코드 읽는 법</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f7f7f5; --bg3:#efeee9;
+  --fg:#1f1f1d; --fg2:#5f5e5a; --fg3:#8b8a84;
+  --line:#e2e1db; --line2:#cfcec7;
+  --acc:#0f6e56; --acc-bg:#e1f5ee;
+  --acc2:#534ab7; --acc2-bg:#eeedfe;
+  --warn:#854f0b; --warn-bg:#faeeda;
+  --dang:#a32d2d; --dang-bg:#fcebeb;
+  --code-bg:#f4f3ef;
+  --c0bg:#F1EFE8; --c0fg:#444441;
+  --c1bg:#E1F5EE; --c1fg:#0F6E56;
+  --c2bg:#E6F1FB; --c2fg:#0C447C;
+  --c3bg:#FAECE7; --c3fg:#993C1D;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18; --bg2:#222220; --bg3:#2b2b28;
+    --fg:#eceae4; --fg2:#a8a69f; --fg3:#7a7973;
+    --line:#33332f; --line2:#454540;
+    --acc:#5dcaa5; --acc-bg:#0f3d31;
+    --acc2:#afa9ec; --acc2-bg:#2b2757;
+    --warn:#efb45c; --warn-bg:#3d2c0e;
+    --dang:#f09595; --dang-bg:#3d1616;
+    --code-bg:#131312;
+    --c0bg:#33332f; --c0fg:#D3D1C7;
+    --c1bg:#085041; --c1fg:#9FE1CB;
+    --c2bg:#0C447C; --c2fg:#B5D4F4;
+    --c3bg:#712B13; --c3fg:#F5C4B3;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:118px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+     font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:0 20px 100px}
+
+header.hero{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+header.hero h1{margin:0 0 8px;font-size:27px;font-weight:600;letter-spacing:-.02em}
+header.hero p{margin:0 0 14px;color:var(--fg2);font-size:14px}
+header.hero a{color:var(--acc)}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;
+       background:var(--bg3);color:var(--fg2);border:1px solid var(--line)}
+.badge.ok{background:var(--acc-bg);color:var(--acc);border-color:transparent}
+
+.toolbar{position:sticky;top:0;z-index:50;background:var(--bg);
+         border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:8px}
+.toolbar .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#q{flex:1;min-width:200px;padding:9px 12px;font-size:14px;font-family:var(--sans);
+   border:1px solid var(--line2);border-radius:8px;background:var(--bg2);color:var(--fg)}
+#q:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.chip{padding:7px 13px;font-size:13px;border:1px solid var(--line2);border-radius:20px;
+      background:var(--bg2);color:var(--fg2);cursor:pointer;user-select:none;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--acc-bg);color:var(--acc);border-color:transparent;font-weight:600}
+.chip.mode[aria-pressed="true"]{background:var(--acc2-bg);color:var(--acc2)}
+.count{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums}
+
+nav.toc{display:flex;gap:5px;flex-wrap:wrap;padding:12px 0 4px;border-bottom:1px solid var(--line);margin-bottom:26px}
+nav.toc a{font-size:12px;padding:4px 9px;border-radius:6px;color:var(--fg2);
+          text-decoration:none;background:var(--bg2);border:1px solid var(--line)}
+nav.toc a:hover{color:var(--acc);border-color:var(--acc)}
+
+h2.grp{margin:44px 0 4px;font-size:21px;font-weight:600;letter-spacing:-.01em;
+       padding-bottom:8px;border-bottom:2px solid var(--fg)}
+h3.cat{margin:28px 0 10px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px}
+h3.cat::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:13px;color:var(--fg2);margin:-4px 0 12px}
+
+.term{padding:12px 14px;border:1px solid var(--line);border-radius:9px;
+      margin-bottom:7px;background:var(--bg2)}
+.term .t{font-size:15px;font-weight:600;color:var(--acc)}
+.term .t.code{font-family:var(--mono);font-size:13.5px}
+.term .en{font-family:var(--mono);font-size:12.5px;color:var(--fg3);margin-left:6px}
+.term .star{font-size:10.5px;padding:1px 6px;border-radius:4px;margin-left:8px;
+            background:var(--acc-bg);color:var(--acc);font-weight:600;vertical-align:2px}
+.term .d{font-size:14px;margin-top:5px}
+.term .x{font-size:13px;color:var(--fg2);margin-top:5px;padding-left:11px;border-left:2px solid var(--line2)}
+.term pre{margin:7px 0 0;padding:9px 11px;background:var(--code-bg);border:1px solid var(--line);
+          border-radius:7px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6}
+.term code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1.5px 5px;border-radius:4px}
+.term pre code{background:none;padding:0}
+body.cards .term{cursor:pointer}
+body.cards .term .d,body.cards .term .x,body.cards .term pre{display:none}
+body.cards .term.open .d,body.cards .term.open .x,body.cards .term.open pre{display:block}
+body.cards .term::after{content:"클릭하면 정답";font-size:11.5px;color:var(--fg3);display:block;margin-top:4px}
+body.cards .term.open::after{display:none}
+
+pre.block{padding:15px 17px;background:var(--code-bg);border:1px solid var(--line);
+          border-radius:9px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62}
+pre.block .cmt{color:var(--fg3)}
+pre.block .hl{color:var(--acc);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12.5px;color:var(--fg2);background:var(--bg2)}
+td code,p code,li code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1.5px 5px;border-radius:4px}
+tr.best td{background:var(--acc-bg);font-weight:500}
+.callout{padding:13px 16px;border-radius:9px;margin:16px 0;font-size:13.5px;border:1px solid transparent}
+.callout.good{background:var(--acc-bg)}
+.callout.info{background:var(--acc2-bg)}
+.callout.warn{background:var(--warn-bg)}
+.callout.bad{background:var(--dang-bg)}
+.callout > b:first-child{display:block;margin-bottom:6px;font-size:14px}
+.callout ul,.callout ol{margin:0;padding-left:20px}
+.callout li{margin-bottom:5px}
+.callout li:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:740px){.two{grid-template-columns:1fr}}
+.empty{padding:40px;text-align:center;color:var(--fg3);font-size:14px}
+
+.qa{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--bg2);overflow:hidden}
+.qa summary{padding:12px 15px;cursor:pointer;font-weight:500;font-size:14.5px;list-style:none}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::before{content:"Q  ";font-family:var(--mono);color:var(--acc);font-weight:600}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .a{padding:12px 15px;font-size:14px}
+.qa .a::before{content:"A  ";font-family:var(--mono);color:var(--acc2);font-weight:600}
+
+.dg text{font-family:var(--sans);font-size:12px;fill:var(--fg2)}
+.dg text.th{font-size:13px;fill:var(--fg);font-weight:500}
+.dg .fr{fill:none;stroke:var(--line);stroke-width:.5}
+.dg .arr{stroke:var(--fg3);stroke-width:1.2;fill:none}
+.dg .b0{fill:var(--c0bg);stroke:var(--c0fg);stroke-width:.5}
+.dg .b1{fill:var(--c1bg);stroke:var(--c1fg);stroke-width:.5}
+.dg .b2{fill:var(--c2bg);stroke:var(--c2fg);stroke-width:.5}
+.dg .b3{fill:var(--c3bg);stroke:var(--c3fg);stroke-width:.5}
+.dg .t0,.dg text.t0{fill:var(--c0fg)} .dg .t1,.dg text.t1{fill:var(--c1fg)}
+.dg .t2,.dg text.t2{fill:var(--c2fg)} .dg .t3,.dg text.t3{fill:var(--c3fg)}
+
+.steps{counter-reset:s;margin:14px 0;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding:10px 0 10px 44px;border-bottom:1px solid var(--line)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:11px;
+  font-family:var(--mono);font-size:12px;color:var(--acc);background:var(--acc-bg);
+  padding:2px 7px;border-radius:5px;font-weight:600}
+.steps b{font-size:14.5px}
+.steps .sub{display:block;font-size:13px;color:var(--fg2);margin-top:2px}
+
+@media print{.toolbar,nav.toc{display:none} .term{break-inside:avoid;background:#fff}
+  body.cards .term .d,body.cards .term .x,body.cards .term pre{display:block} body{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>KNN · 결정 트리 정리 <span style="color:var(--fg3);font-weight:400">+ 코드 읽는 법</span></h1>
+  <p>개념 용어와 <b>코드 관용구</b>를 함께 담았습니다. 코드를 볼 때 "이 줄이 왜 있는지" 막히는 부분을 검색해서 찾아보세요. <b>암기 모드</b>를 켜면 플래시카드가 됩니다. · 함께 보기: <a href="ML_회귀_개념정리.html">회귀 개념 정리</a> · <a href="sklearn_실무_레퍼런스.html">sklearn 레퍼런스</a></p>
+  <div class="badges">
+    <span class="badge" id="nterm">항목 0개</span>
+    <span class="badge">scikit-learn 1.7.2</span>
+    <span class="badge ok">코드·수치 전부 실행 검증</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="row">
+    <input id="q" type="search" placeholder="검색 — 개념·코드·설명 전체 (예: ravel, 지니, 과적합, meshgrid)" autocomplete="off">
+    <button class="chip" data-f="all" aria-pressed="true">전체</button>
+    <button class="chip" data-f="knn" aria-pressed="false">KNN</button>
+    <button class="chip" data-f="tree" aria-pressed="false">결정 트리</button>
+    <button class="chip" data-f="code" aria-pressed="false">코드 읽기</button>
+    <button class="chip" data-f="hot" aria-pressed="false">★ 핵심만</button>
+    <button class="chip mode" id="cardbtn" aria-pressed="false">암기 모드</button>
+    <span class="count" id="cnt"></span>
+  </div>
+</div>
+
+<nav class="toc" id="toc"></nav>
+
+<!-- ================= 큰 그림 ================= -->
+<section>
+<h2 class="grp" id="map">큰 그림 — 정반대 성격의 두 알고리즘</h2>
+<p class="note">둘 다 데이터 분포를 가정하지 않는 <b>비파라미터(non-parametric)</b> 모델이지만, 성격은 정반대입니다.</p>
+<table>
+<thead><tr><th style="width:22%"></th><th style="width:39%">KNN</th><th style="width:39%">결정 트리</th></tr></thead>
+<tbody>
+<tr><td><b>한 줄 요약</b></td><td>가까운 이웃 K명에게 물어본다</td><td>질문을 던져 데이터를 나눈다</td></tr>
+<tr><td><b>학습 시점</b></td><td>없음 — <b>게으른 학습(Lazy)</b>, 저장만 함</td><td>있음 — 트리를 실제로 구축</td></tr>
+<tr><td><b>학습 속도</b></td><td>매우 빠름</td><td>보통</td></tr>
+<tr><td><b>예측 속도</b></td><td><b>느림</b> — 매번 전체와 거리 계산</td><td><b>매우 빠름</b> — if문 몇 번</td></tr>
+<tr><td><b>스케일링</b></td><td><b>필수</b> — 거리를 직접 계산하므로</td><td><b>불필요</b> — 크기가 아닌 <b>순서</b>만 봄</td></tr>
+<tr><td><b>설명 가능성</b></td><td>낮음</td><td><b>높음</b> — IF-THEN 규칙으로 출력 가능</td></tr>
+<tr><td><b>과적합 손잡이</b></td><td><code>n_neighbors</code> (K)</td><td><code>max_depth</code> 등</td></tr>
+<tr><td><b>예측값 모양</b></td><td>계단 (이웃 K개의 평균)</td><td>계단 (리프 샘플의 평균)</td></tr>
+</tbody>
+</table>
+<div class="callout good">
+  <b>한 문장으로 꿰기</b>
+  KNN은 <b>"가까운 이웃 K개에게 물어보는"</b> 게으른 학습이라 거리 계산이 핵심이고 스케일링이 필수다. 결정 트리는 <b>"불순도를 가장 많이 줄이는 질문"</b>을 재귀적으로 찾아 나가는 방식이라 스케일링이 필요 없고 규칙을 설명할 수 있다. 둘 다 <b>하이퍼파라미터 하나(K / max_depth)가 과적합과 과소적합을 가르는 손잡이</b>다.
+</div>
+</section>
+
+<!-- ================= KNN 다이어그램 ================= -->
+<section>
+<h2 class="grp" id="knnviz">KNN — K값 하나로 답이 뒤집힌다</h2>
+<p class="note">아래는 미지의 샘플 <code>(3.2, 3.2)</code>를 분류하는 상황입니다. 거리 순위를 실제로 계산해 그렸습니다.</p>
+
+<svg class="dg" width="100%" viewBox="0 0 680 470" role="img" aria-label="K값에 따라 KNN 분류 결과가 뒤바뀌는 예시 그래프">
+<rect class="fr" x="60" y="60" width="340" height="340" rx="4"/>
+<text x="62" y="50" dominant-baseline="central">특성 2 ↑</text>
+<text x="230" y="422" text-anchor="middle" dominant-baseline="central">특성 1 →</text>
+<circle cx="227.4" cy="232.6" r="95.5" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-dasharray="2 4"/>
+<circle cx="227.4" cy="232.6" r="68.8" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-dasharray="7 5"/>
+<circle cx="138.5" cy="295.4" r="7" fill="#378ADD" stroke="#042C53"/>
+<circle cx="164.6" cy="217.0" r="7" fill="#378ADD" stroke="#042C53"/>
+<circle cx="190.8" cy="321.6" r="7" fill="#378ADD" stroke="#042C53"/>
+<circle cx="216.9" cy="269.3" r="7" fill="#378ADD" stroke="#042C53"/>
+<circle cx="112.3" cy="243.1" r="7" fill="#378ADD" stroke="#042C53"/>
+<circle cx="269.2" cy="164.7" r="7" fill="#D85A30" stroke="#4A1B0C"/>
+<circle cx="295.4" cy="243.1" r="7" fill="#D85A30" stroke="#4A1B0C"/>
+<circle cx="321.5" cy="138.5" r="7" fill="#D85A30" stroke="#4A1B0C"/>
+<circle cx="243.1" cy="138.5" r="7" fill="#D85A30" stroke="#4A1B0C"/>
+<circle cx="347.7" cy="217.0" r="7" fill="#D85A30" stroke="#4A1B0C"/>
+<polygon points="227.4,222.6 237.4,232.6 227.4,242.6 217.4,232.6" fill="#EF9F27" stroke="#412402" stroke-width="1.5"/>
+<rect class="b0" x="430" y="70" width="210" height="48" rx="8"/>
+<text class="th t0" x="535" y="86" text-anchor="middle" dominant-baseline="central">미지의 샘플 (?)</text>
+<text class="t0" x="535" y="105" text-anchor="middle" dominant-baseline="central">좌표 (3.2, 3.2)</text>
+<rect class="b2" x="430" y="150" width="210" height="82" rx="8"/>
+<text class="th t2" x="535" y="170" text-anchor="middle" dominant-baseline="central">K = 3   (안쪽 원)</text>
+<text class="t2" x="535" y="192" text-anchor="middle" dominant-baseline="central">Class A 2표 · Class B 1표</text>
+<text class="th t2" x="535" y="214" text-anchor="middle" dominant-baseline="central">→ Class A</text>
+<rect class="b3" x="430" y="252" width="210" height="82" rx="8"/>
+<text class="th t3" x="535" y="272" text-anchor="middle" dominant-baseline="central">K = 5   (바깥 원)</text>
+<text class="t3" x="535" y="294" text-anchor="middle" dominant-baseline="central">Class A 2표 · Class B 3표</text>
+<text class="th t3" x="535" y="316" text-anchor="middle" dominant-baseline="central">→ Class B</text>
+<line class="arr" x1="535" y1="234" x2="535" y2="248"/>
+<circle cx="62" cy="445" r="6" fill="#378ADD" stroke="#042C53"/><text x="74" y="445" dominant-baseline="central">Class A</text>
+<circle cx="150" cy="445" r="6" fill="#D85A30" stroke="#4A1B0C"/><text x="162" y="445" dominant-baseline="central">Class B</text>
+<polygon points="242,437 250,445 242,453 234,445" fill="#EF9F27" stroke="#412402" stroke-width="1.2"/>
+<text x="256" y="445" dominant-baseline="central">미지의 샘플</text>
+<line x1="345" y1="445" x2="367" y2="445" stroke="#5F5E5A" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="373" y="445" dominant-baseline="central">K=3 반경</text>
+<line x1="455" y1="445" x2="477" y2="445" stroke="#5F5E5A" stroke-width="1.5" stroke-dasharray="2 4"/>
+<text x="483" y="445" dominant-baseline="central">K=5 반경</text>
+</svg>
+
+<table>
+<thead><tr><th style="width:12%">K</th><th style="width:44%">이웃 구성</th><th>예측</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>A 1표</td><td>Class A</td></tr>
+<tr><td>3</td><td>A 2표 · B 1표</td><td>Class A</td></tr>
+<tr class="best"><td><b>5</b></td><td>A 2표 · <b>B 3표</b></td><td><b>Class B</b> ← 뒤집힘</td></tr>
+<tr><td>7</td><td>A 4표 · B 3표</td><td>Class A</td></tr>
+<tr><td>9</td><td>A 5표 · B 4표</td><td>Class A</td></tr>
+</tbody>
+</table>
+
+<pre class="block"><code>K 작음 (K=1) ←─────────────────────────────────→ K 큼 (K=n)
+   이웃 하나에 휘둘림                             전체 평균에 수렴
+   경계가 들쭉날쭉                                경계가 뭉뚝
+   <span class="hl">★ 과대적합 (Overfitting)</span>                    <span class="hl">★ 과소적합 (Underfitting)</span>
+
+   ※ 분류에서는 동점 방지를 위해 보통 <span class="hl">홀수</span>로 설정</code></pre>
+</section>
+
+<!-- ================= 결정트리 다이어그램 ================= -->
+<section>
+<h2 class="grp" id="treeviz">결정 트리 — 어떤 질문으로 나눌지 고른다</h2>
+<p class="note">고객 10명(충성 5 · 이탈 5)을 성별로 나눌지, 결혼 여부로 나눌지 결정하는 과정입니다. 손계산과 scikit-learn 결과가 완전히 일치함을 확인했습니다.</p>
+
+<svg class="dg" width="100%" viewBox="0 0 680 384" role="img" aria-label="결정 트리가 성별과 결혼 여부 중 첫 분기 기준을 선택하는 과정">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<rect class="b0" x="240" y="40" width="200" height="56" rx="8"/>
+<text class="th t0" x="340" y="58" text-anchor="middle" dominant-baseline="central">부모 노드 · 10명</text>
+<text class="t0" x="340" y="78" text-anchor="middle" dominant-baseline="central">A 5 · B 5 → 지니 0.5</text>
+<line class="arr" x1="315" y1="96" x2="205" y2="130" marker-end="url(#ar)"/>
+<line class="arr" x1="365" y1="96" x2="475" y2="130" marker-end="url(#ar)"/>
+<rect class="b1" x="40" y="134" width="290" height="36" rx="8"/>
+<text class="th t1" x="185" y="152" text-anchor="middle" dominant-baseline="central">성별로 나누면</text>
+<rect class="b0" x="350" y="134" width="290" height="36" rx="8"/>
+<text class="th t0" x="495" y="152" text-anchor="middle" dominant-baseline="central">결혼 여부로 나누면</text>
+<line class="arr" x1="170" y1="170" x2="115" y2="192" marker-end="url(#ar)"/>
+<line class="arr" x1="200" y1="170" x2="255" y2="192" marker-end="url(#ar)"/>
+<line class="arr" x1="480" y1="170" x2="425" y2="192" marker-end="url(#ar)"/>
+<line class="arr" x1="510" y1="170" x2="565" y2="192" marker-end="url(#ar)"/>
+<rect class="b0" x="40" y="196" width="135" height="68" rx="8"/>
+<text class="th t0" x="107" y="214" text-anchor="middle" dominant-baseline="central">남 · 6명</text>
+<text class="t0" x="107" y="234" text-anchor="middle" dominant-baseline="central">A 5 · B 1</text>
+<text class="t0" x="107" y="252" text-anchor="middle" dominant-baseline="central">지니 0.278</text>
+<rect class="b1" x="195" y="196" width="135" height="68" rx="8"/>
+<text class="th t1" x="262" y="214" text-anchor="middle" dominant-baseline="central">여 · 4명</text>
+<text class="t1" x="262" y="234" text-anchor="middle" dominant-baseline="central">A 0 · B 4</text>
+<text class="t1" x="262" y="252" text-anchor="middle" dominant-baseline="central">지니 0 · 순수!</text>
+<rect class="b0" x="350" y="196" width="135" height="68" rx="8"/>
+<text class="th t0" x="417" y="214" text-anchor="middle" dominant-baseline="central">기혼 · 5명</text>
+<text class="t0" x="417" y="234" text-anchor="middle" dominant-baseline="central">A 2 · B 3</text>
+<text class="t0" x="417" y="252" text-anchor="middle" dominant-baseline="central">지니 0.480</text>
+<rect class="b0" x="505" y="196" width="135" height="68" rx="8"/>
+<text class="th t0" x="572" y="214" text-anchor="middle" dominant-baseline="central">미혼 · 5명</text>
+<text class="t0" x="572" y="234" text-anchor="middle" dominant-baseline="central">A 3 · B 2</text>
+<text class="t0" x="572" y="252" text-anchor="middle" dominant-baseline="central">지니 0.480</text>
+<line class="arr" x1="107" y1="264" x2="107" y2="286" marker-end="url(#ar)"/>
+<line class="arr" x1="262" y1="264" x2="262" y2="286" marker-end="url(#ar)"/>
+<line class="arr" x1="417" y1="264" x2="417" y2="286" marker-end="url(#ar)"/>
+<line class="arr" x1="572" y1="264" x2="572" y2="286" marker-end="url(#ar)"/>
+<rect class="b1" x="40" y="290" width="290" height="64" rx="8"/>
+<text class="th t1" x="185" y="310" text-anchor="middle" dominant-baseline="central">지니 0.167 · 정보이득 0.61</text>
+<text class="t1" x="185" y="334" text-anchor="middle" dominant-baseline="central">불순도 0.333 감소 → 이 기준을 선택</text>
+<rect class="b0" x="350" y="290" width="290" height="64" rx="8"/>
+<text class="th t0" x="495" y="310" text-anchor="middle" dominant-baseline="central">지니 0.480 · 정보이득 0.029</text>
+<text class="t0" x="495" y="334" text-anchor="middle" dominant-baseline="central">불순도 0.02 감소 → 탈락</text>
+</svg>
+
+<h3 class="cat">지표 읽는 방향이 서로 반대입니다</h3>
+<table>
+<thead><tr><th style="width:24%">지표</th><th style="width:26%">좋은 분기의 조건</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><b>지니 불순도</b></td><td><b>작을수록</b> 좋음 (0에 수렴)</td><td>불순도 자체를 재므로 → <b>최소화</b></td></tr>
+<tr><td><b>엔트로피</b></td><td>작을수록 좋음</td><td>무질서도 자체 → 최소화</td></tr>
+<tr><td><b>정보 이득 (IG)</b></td><td><b>클수록</b> 좋음</td><td>엔트로피 <b>감소량</b> → <b>최대화</b></td></tr>
+<tr><td><b>MSE</b></td><td>작을수록 좋음</td><td>오차 자체 → 최소화</td></tr>
+</tbody>
+</table>
+<p class="note">엔트로피와 정보 이득의 방향이 반대인 것에 주의하세요. IG = 부모 엔트로피 − 자식 가중평균 엔트로피, 즉 "얼마나 줄였나"입니다. 실무에서 지니와 엔트로피는 결과가 거의 같고, <b>지니가 로그 연산이 없어 빨라서 기본값</b>입니다.</p>
+
+<h3 class="cat">회귀 트리는 MSE로 나눈다</h3>
+<pre class="block"><code>부모   [20, 40, 80, 100]   평균 60   MSE = 1000
+                  │
+           <span class="hl">공부시간 &lt; 5 ?</span>
+        ┌─────────┴─────────┐
+   [20, 40]              [80, 100]
+   평균 30                평균 90
+   MSE = 100              MSE = 100
+        └─────────┬─────────┘
+     가중평균 MSE = (2/4)(100) + (2/4)(100) = 100
+     <span class="hl">ΔMSE = 1000 − 100 = 900</span>   ← 이 감소량이 최대인 지점을 고른다</code></pre>
+<div class="callout info">
+  <b><code>criterion='absolute_error'</code>는 평균이 아니라 중앙값을 예측합니다</b>
+  확인해봤습니다. 한 리프에 <code>[1, 2, 3, 10, 20]</code>이 모이면 <code>squared_error</code>는 <b>7.2</b>(평균), <code>absolute_error</code>는 <b>3.0</b>(중앙값)을 예측합니다. 이상치에 강한 이유가 여기 있습니다.
+</div>
+</section>
+
+<main id="out"></main>
+
+<!-- ================= 코드 읽는 법 ================= -->
+<section>
+<h2 class="grp" id="read">코드 읽는 법</h2>
+<p class="note">머신러닝 코드는 데이터가 무엇이든 <b>거의 같은 뼈대</b>를 가집니다. 이 순서를 알면 처음 보는 코드도 어디서부터 읽어야 할지 알 수 있습니다.</p>
+
+<h3 class="cat">1. 모든 ML 코드의 공통 뼈대 8단계</h3>
+<ol class="steps">
+<li><b>import</b><span class="sub">여기만 봐도 무엇을 할 코드인지 절반은 알 수 있습니다. <code>KNeighborsClassifier</code>가 있으면 KNN 분류, <code>DecisionTreeRegressor</code>가 있으면 트리 회귀입니다.</span></li>
+<li><b>환경 설정</b><span class="sub"><code>plt.rcParams</code> 한글 폰트, <code>np.random.seed</code> 난수 고정. 모델과 무관하므로 <b>빠르게 넘어가도 되는 부분</b>입니다.</span></li>
+<li><b>데이터 준비 — X와 y를 만든다</b><span class="sub">가장 중요합니다. <code>X</code>의 shape과 <code>y</code>의 shape을 확인하세요. X는 항상 2차원(샘플×특성), y는 1차원입니다.</span></li>
+<li><b>분할 — train / test</b><span class="sub"><code>train_test_split</code>. 반환 순서가 <code>X_train, X_test, y_train, y_test</code>인 것에 주의.</span></li>
+<li><b>전처리 — 스케일링 · 인코딩</b><span class="sub"><code>fit_transform</code>은 train에, <code>transform</code>은 test에. <b>이 구분이 코드 리뷰의 첫 번째 체크포인트</b>입니다.</span></li>
+<li><b>모델 생성 → 학습</b><span class="sub">괄호 안의 인자가 전부 <b>하이퍼파라미터</b>입니다. <code>fit(X, y)</code> 한 줄이 학습 전체입니다.</span></li>
+<li><b>예측 → 평가</b><span class="sub"><code>predict</code> 후 지표 계산. 분류면 accuracy·confusion_matrix, 회귀면 RMSE·R².</span></li>
+<li><b>시각화</b><span class="sub">보통 코드의 절반 이상을 차지하지만 <b>모델과는 무관</b>합니다. 처음 읽을 때는 건너뛰고, 결과를 이해한 뒤 돌아오세요.</span></li>
+</ol>
+
+<div class="callout good">
+  <b>처음 보는 코드를 읽는 순서</b>
+  <ol>
+    <li><b>import를 먼저 본다</b> → 무슨 알고리즘인지 파악</li>
+    <li><b>X와 y가 만들어지는 줄을 찾는다</b> → 무엇으로 무엇을 맞히는지 파악</li>
+    <li><b>모델 생성 줄로 점프</b> → 하이퍼파라미터 확인</li>
+    <li><b>평가 지표 출력 줄로 점프</b> → 결과가 어떻게 나오는지 확인</li>
+    <li>그 다음에야 <b>시각화 코드를 읽는다</b></li>
+  </ol>
+  중간 과정을 순서대로 읽으려 하면 시각화 코드에서 지쳐버립니다.
+</div>
+
+<h3 class="cat">2. 줄별 해부 — KNN 분류 코드</h3>
+<pre class="block"><code><span class="cmt"># ── ③ 데이터 준비 ─────────────────────────────────────────</span>
+iris = load_iris()
+X = iris.data[:, 2:]     <span class="cmt"># 모든 행, 2번 열부터 끝까지 → 꽃잎 길이·너비 2개</span>
+                         <span class="cmt">#   4개를 다 쓰면 4차원이라 그림으로 못 그린다</span>
+y = iris.target          <span class="cmt"># 0=setosa, 1=versicolor, 2=virginica</span>
+
+<span class="cmt"># ── ④ 분할 ───────────────────────────────────────────────</span>
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42)
+<span class="cmt">#   ↑ 반환 순서 고정: X끼리 먼저, y끼리 나중</span>
+<span class="cmt">#   random_state가 없으면 실행할 때마다 결과가 달라진다</span>
+
+<span class="cmt"># ── ⑤ 전처리 ─────────────────────────────────────────────</span>
+scaler = StandardScaler()
+X_train_scaled = scaler.<span class="hl">fit_transform</span>(X_train)  <span class="cmt"># 기준 계산 + 변환</span>
+X_test_scaled  = scaler.<span class="hl">transform</span>(X_test)       <span class="cmt"># 변환만 (fit 금지!)</span>
+
+<span class="cmt"># ── ⑥ 모델 ───────────────────────────────────────────────</span>
+knn = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
+<span class="cmt">#                          ↑ 여기 인자가 전부 하이퍼파라미터</span>
+knn.fit(X_train_scaled, y_train)   <span class="cmt"># KNN은 사실상 '저장'만 한다</span>
+
+<span class="cmt"># ── ⑦ 예측 ───────────────────────────────────────────────</span>
+y_pred = knn.predict(X_test_scaled)
+
+<span class="cmt"># ── ⑧ 시각화: 결정 경계를 그리는 3단 콤보 ─────────────────</span>
+<span class="cmt"># 아이디어: 화면 전체를 촘촘한 격자로 덮고, 격자점마다 모델에게</span>
+<span class="cmt">#          "여기는 무슨 클래스?"를 물어본 뒤 답에 따라 색을 칠한다.</span>
+
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                     np.arange(y_min, y_max, 0.02))
+<span class="cmt">#   → (261, 264) 크기의 좌표판 2장. 격자점 68,904개</span>
+
+Z = knn.predict(<span class="hl">np.c_[xx.ravel(), yy.ravel()]</span>)
+<span class="cmt">#   ravel()  : (261,264) 2차원 → (68904,) 1차원으로 편다</span>
+<span class="cmt">#   np.c_[..]: 두 1차원을 열로 붙여 (68904, 2) 좌표 목록을 만든다</span>
+<span class="cmt">#              → 모델이 원하는 "샘플 × 특성" 형태</span>
+
+Z = Z.<span class="hl">reshape(xx.shape)</span>   <span class="cmt"># 다시 격자 모양으로 → 지도처럼 그릴 수 있게</span>
+axes[0].contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.Set1)</code></pre>
+
+<h3 class="cat">3. 줄별 해부 — 결정 트리 코드</h3>
+<pre class="block"><code>model = DecisionTreeRegressor(criterion='squared_error', max_depth=1, random_state=42)
+<span class="cmt">#                             ↑ 분기 지표         ↑ 1번만 분기 (규칙 확인용)</span>
+model.fit(X, y)
+
+rules = <span class="hl">export_text</span>(model, feature_names=['공부 시간'])
+print(rules)
+<span class="cmt"># |--- 공부 시간 &lt;= 5.00      ← 모델이 스스로 찾은 분기점</span>
+<span class="cmt"># |   |--- value: [30.00]     ← 왼쪽 리프의 평균값</span>
+<span class="cmt"># |--- 공부 시간 &gt;  5.00</span>
+<span class="cmt"># |   |--- value: [90.00]</span></code></pre>
+<div class="callout warn">
+  <b>분류 트리와 회귀 트리는 <code>export_text</code> 출력이 다릅니다</b>
+  <b>회귀</b>는 <code>value: [30.00]</code> (예측 수치)를 출력하지만, <b>분류</b>는 <code>class: 0</code> (클래스 라벨)만 출력합니다. 분류에서 클래스별 개수를 보려면 <code>show_weights=True</code>를 줘야 합니다.
+<pre style="margin-top:8px"><code>print(export_text(clf, feature_names=['성별','결혼'], show_weights=True))
+# |--- 성별 &lt;= 0.50
+# |   |--- weights: [5.00, 1.00] class: 0
+# |--- 성별 &gt;  0.50
+# |   |--- weights: [0.00, 4.00] class: 1</code></pre>
+</div>
+
+<h3 class="cat">4. 에러 메시지 읽는 법</h3>
+<table>
+<thead><tr><th style="width:44%">메시지</th><th style="width:28%">원인</th><th>해결</th></tr></thead>
+<tbody>
+<tr><td><code>Expected 2D array, got 1D array instead</code></td><td>X를 1차원으로 넣음</td><td><code>X.reshape(-1, 1)</code></td></tr>
+<tr><td><code>X has 30 features, but ... is expecting 5</code></td><td>전처리를 건너뛰고 원본을 넣음</td><td>Pipeline을 통째로 저장·사용</td></tr>
+<tr><td><code>Found input variables with inconsistent numbers of samples</code></td><td>X와 y의 행 수가 다름</td><td><code>X.shape</code>, <code>y.shape</code> 확인</td></tr>
+<tr><td><code>could not convert string to float</code></td><td>문자열 범주형을 그대로 넣음</td><td><code>OneHotEncoder</code>로 인코딩</td></tr>
+<tr><td><code>Metric 'cosine' not valid</code></td><td><code>kd_tree</code>가 cosine 미지원</td><td><code>algorithm='brute'</code></td></tr>
+<tr><td><code>ConvergenceWarning</code></td><td>반복 안에 수렴 못 함</td><td><code>max_iter</code> 증가 또는 스케일링</td></tr>
+<tr><td><code>UserWarning: l1_ratio parameter is only used...</code></td><td>조건이 안 맞아 인자가 무시됨</td><td>해당 인자 삭제</td></tr>
+</tbody>
+</table>
+<div class="callout info">
+  <b>에러를 읽는 순서</b>
+  파이썬 에러는 <b>맨 아래 줄이 가장 중요</b>합니다. 위쪽 traceback은 "어디를 거쳐 왔는지"이고, 맨 아래가 "무엇이 잘못됐는지"입니다. <b>맨 아래 한 줄을 먼저 읽고</b>, 그 다음 traceback에서 <b>내가 쓴 파일 이름이 나오는 줄</b>을 찾으세요.
+</div>
+</section>
+
+<!-- ================= 정정 ================= -->
+<section>
+<h2 class="grp" id="fix">원본 자료에서 고칠 것</h2>
+<p class="note">실행해서 확인한 내용입니다.</p>
+
+<h3 class="cat">① 분류 트리 출력 예시가 실제와 다름</h3>
+<div class="two">
+<div class="callout bad"><b>❌ 자료에 적힌 출력</b>
+<pre style="margin-top:6px"><code>|--- 성별 &lt;= 0.50
+|   |--- value: [5.00, 1.00]</code></pre>
+<code>value: [...]</code>는 <b>회귀 트리</b>의 출력 형식입니다.</div>
+<div class="callout good"><b>✅ 실제 출력</b>
+<pre style="margin-top:6px"><code>|--- 성별 &lt;= 0.50
+|   |--- class: 0
+|--- 성별 &gt;  0.50
+|   |--- class: 1</code></pre>
+개수를 보려면 <code>show_weights=True</code>가 필요합니다.</div>
+</div>
+<p class="note">해석 내용(<code>[5, 1]</code>, <code>[0, 4]</code>) 자체는 맞습니다. 출력 형식만 다릅니다.</p>
+
+<h3 class="cat">② 개념도의 원 반지름이 K개를 담지 못함</h3>
+<table>
+<thead><tr><th style="width:24%">코드의 반지름</th><th style="width:24%">라벨</th><th>실제 포함된 점</th></tr></thead>
+<tbody>
+<tr><td><code>1.25</code></td><td>K=3 반경</td><td><b>2개</b> ← 3개가 아님</td></tr>
+<tr><td><code>2.10</code></td><td>K=5 반경</td><td><b>7개</b> ← 5개가 아님</td></tr>
+</tbody>
+</table>
+<p>올바른 반지름은 <b>3번째·5번째 이웃까지의 거리</b>입니다. 하드코딩 대신 계산하면 데이터가 바뀌어도 항상 맞습니다.</p>
+<pre class="block"><code>distances = np.linalg.norm(all_points - query_point, axis=1)
+<span class="hl">r3, r5 = np.sort(distances)[[2, 4]]</span>   <span class="cmt"># 3번째=1.315, 5번째=1.825</span>
+
+circle_k3 = plt.Circle(query_point, r3, color='darkorange', fill=False,
+                       linestyle='--', linewidth=2, label='K=3 반경')
+circle_k5 = plt.Circle(query_point, r5, color='purple', fill=False,
+                       linestyle=':', linewidth=2, label='K=5 반경')
+<span class="cmt"># 검증: 반경 안의 점 개수 = 3개 / 5개 (정확히 일치)</span></code></pre>
+
+<h3 class="cat">③ <code>metric='cosine'</code>의 제약이 빠짐</h3>
+<table>
+<thead><tr><th style="width:22%">algorithm</th><th style="width:26%">cosine</th><th style="width:26%">mahalanobis</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><code>brute</code></td><td>✅ 가능</td><td>✅ 가능</td><td>완전 탐색</td></tr>
+<tr><td><code>ball_tree</code></td><td>❌ 불가</td><td>✅ 가능</td><td></td></tr>
+<tr><td><code>kd_tree</code></td><td>❌ 불가</td><td>❌ 불가</td><td></td></tr>
+<tr><td><code>auto</code></td><td>✅ (brute 자동 선택)</td><td>✅</td><td>지원 여부를 보고 알아서 고름</td></tr>
+</tbody>
+</table>
+<p class="note">트리 구조가 삼각부등식을 전제하는데 코사인 거리는 그것을 만족하지 않기 때문입니다.</p>
+
+<h3 class="cat">④ 표기 오류</h3>
+<table>
+<thead><tr><th style="width:34%">위치</th><th style="width:33%">현재</th><th>수정</th></tr></thead>
+<tbody>
+<tr><td>실전 필수 전처리</td><td>"단위에 매우 민감<b>다</b>"</td><td>민감<b>하</b>다</td></tr>
+<tr><td>2.3절 · 6.3절</td><td>분기(<b>Ceriterion</b>) 기준</td><td><b>Criterion</b></td></tr>
+<tr><td>4.2절 두 번째 소제목</td><td><code>### 4.2 결혼 여부...</code></td><td><code>### 4.2.2</code></td></tr>
+<tr><td>거리 지표 가이드</td><td>"<b>상</b>평준화되는 경향"</td><td>평준화</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- ================= Q&A ================= -->
+<section>
+<h2 class="grp" id="qa">시험 · 면접 단골</h2>
+<details class="qa"><summary>KNN이 "게으른 학습(Lazy Learning)"이라 불리는 이유는?</summary>
+<div class="a"><code>fit()</code>이 하는 일이 사실상 <b>데이터를 저장하는 것뿐</b>이기 때문입니다. 실제 계산(거리 측정, 이웃 선택)은 전부 <code>predict()</code> 시점에 일어납니다. 그래서 학습은 순식간이지만 예측이 느립니다. 선형 회귀와 정반대입니다.</div></details>
+
+<details class="qa"><summary>KNN에 스케일링이 필수인 이유는?</summary>
+<div class="a">거리를 직접 계산하기 때문입니다. 특성이 <code>키(cm)</code>와 <code>연봉(원)</code>이라면 연봉의 숫자가 수백만 단위라 거리를 완전히 지배해버리고, 키는 사실상 무시됩니다. 표준화로 모든 특성의 발언권을 동등하게 맞춰야 합니다.</div></details>
+
+<details class="qa"><summary>결정 트리는 왜 스케일링이 필요 없나?</summary>
+<div class="a">분할 기준이 "이 값이 임계값보다 큰가?"라는 <b>순서</b>이기 때문입니다. 값에 어떤 단조 변환(×100, log 등)을 해도 대소 관계가 유지되므로 분할 결과가 똑같습니다. 거리를 계산하는 KNN·SVM과 결정적으로 다른 점입니다.</div></details>
+
+<details class="qa"><summary>지니 불순도와 정보 이득은 어느 쪽이 클수록 좋은가?</summary>
+<div class="a"><b>방향이 반대</b>입니다. <b>지니는 작을수록</b> 좋습니다(불순도 자체를 재므로 0에 가까울수록 순수). <b>정보 이득은 클수록</b> 좋습니다(엔트로피의 <b>감소량</b>이므로 많이 줄일수록 좋음). 예시에서 성별 분기는 지니 0.167(작음), IG 0.61(큼)로 두 지표 모두 우수하다고 판정했습니다.</div></details>
+
+<details class="qa"><summary>K가 작을 때와 클 때 각각 어떤 문제가 생기나?</summary>
+<div class="a"><b>K=1</b>이면 바로 옆 점 하나에 결과가 좌우되어 잡음과 이상치에 민감해집니다 → <b>과대적합</b>. <b>K가 매우 크면</b> 멀리 있는 점까지 투표에 참여해 경계가 뭉뚝해지고, 극단적으로 K=n이면 항상 전체 다수 클래스(회귀는 전체 평균)만 예측합니다 → <b>과소적합</b>.</div></details>
+
+<details class="qa"><summary>scikit-learn은 C4.5 알고리즘을 지원하나?</summary>
+<div class="a"><b>지원하지 않습니다.</b> scikit-learn의 <code>sklearn.tree</code>는 <b>CART만</b> 구현되어 있습니다. 그래서 (1) 모든 분기가 <b>이진 분기</b>이고, (2) 범주형 변수를 직접 처리하지 못해 <code>OneHotEncoder</code>/<code>OrdinalEncoder</code>로 사전 인코딩이 필요합니다.</div></details>
+
+<details class="qa"><summary><code>metric='euclidean'</code>과 기본값의 차이는?</summary>
+<div class="a"><b>차이가 없습니다.</b> 기본값은 <code>metric='minkowski', p=2</code>인데 이것이 곧 유클리드 거리입니다. 실제로 예측 결과가 완전히 동일함을 확인했습니다. 명시적으로 적으면 읽는 사람이 무슨 거리인지 바로 알 수 있다는 장점만 있습니다.</div></details>
+
+<details class="qa"><summary>결정 트리의 과적합을 막는 방법 3가지는?</summary>
+<div class="a"><b>① 사전 가지치기</b>: <code>max_depth</code>, <code>min_samples_split</code>, <code>min_samples_leaf</code>로 성장 자체를 제한. <b>② 사후 가지치기</b>: 다 키운 뒤 <code>ccp_alpha</code>로 불필요한 가지를 잘라냄. <b>③ 앙상블</b>: 애초에 단일 트리를 쓰지 않고 RandomForest·XGBoost·LightGBM 등을 사용. 실무에서는 ③이 사실상 정답입니다.</div></details>
+</section>
+
+</div>
+
+<script>
+const D=[
+{g:'knn',cat:'A. KNN 핵심 개념',items:[
+ {t:'K-최근접 이웃',e:'KNN',h:1,d:'새 데이터가 들어오면 <b>가장 가까운 K개 이웃</b>을 찾아, 분류는 다수결로 회귀는 평균으로 예측하는 알고리즘.',x:'분류와 회귀 모두 가능. 원리는 같고 마지막 집계 방식만 다르다.'},
+ {t:'게으른 학습',e:'Lazy Learning',h:1,d:'미리 학습하지 않고 <b>예측 시점에</b> 계산하는 방식.',x:'<code>fit()</code>은 데이터를 저장만 한다. 학습은 순식간, 예측은 느림.'},
+ {t:'다수결 투표',e:'Majority Voting',h:1,d:'분류에서 K개 이웃의 클래스 중 <b>가장 많은 것</b>을 선택.',x:'동점을 피하려고 보통 K를 홀수로 잡는다.'},
+ {t:'이웃 평균',e:'Mean',h:1,d:'회귀에서 K개 이웃의 y값을 <b>평균</b>내어 예측.',x:'수식: ŷ = (1/K) Σ yᵢ. 그래서 예측선이 계단 모양이 된다.'},
+ {t:'비파라미터 모델',e:'Non-parametric',d:'데이터 분포에 대한 사전 가정이 없는 모델.',x:'학습할 계수(파라미터)가 없다. 결정 트리도 여기 속한다.'},
+ {t:'외삽 불가',e:'no extrapolation',h:1,d:'학습 데이터 <b>범위 밖</b>에서는 예측이 수평선이 된다.',x:'x가 아무리 멀어져도 가장 가까운 이웃이 계속 같은 끝점이라서. 선형회귀가 계속 뻗어나가는 것과 대비된다.'},
+ {t:'계단형 예측',e:'step function',d:'x가 조금 움직여도 이웃 집합이 그대로면 예측값이 안 바뀐다.',x:'이웃 하나가 교체되는 순간 값이 툭 튄다 → 계단 모서리.'},
+]},
+{g:'knn',cat:'B. 거리 지표 (metric)',items:[
+ {t:'유클리드 거리',e:'euclidean, L2',h:1,d:'√Σ(xᵢ−yᵢ)² — 공간상의 <b>직선거리</b>.',x:'<code>metric=\'minkowski\', p=2</code>와 <b>완전히 동일</b>하다(예측 결과 일치 확인). 기본값.'},
+ {t:'민코프스키 거리',e:'minkowski',h:1,d:'(Σ|xᵢ−yᵢ|^p)^(1/p) — p값에 따라 여러 거리를 포괄하는 일반형.',x:'p=1이면 맨해튼, p=2면 유클리드. sklearn 기본값.'},
+ {t:'맨해튼 거리',e:'manhattan, L1',h:1,d:'Σ|xᵢ−yᵢ| — 격자 위를 이동하는 거리.',x:'고차원에서는 유클리드가 차원의 저주로 평준화되므로 맨해튼이 더 효과적일 때가 많다.'},
+ {t:'체비쇼프 거리',e:'chebyshev, L∞',d:'max|xᵢ−yᵢ| — 가장 큰 단일 차원의 차이만 본다.',x:''},
+ {t:'마할라노비스 거리',e:'mahalanobis',d:'공분산 행렬을 반영해 특성 간 상관관계를 보정한 거리.',x:'<code>metric_params</code>로 역공분산 행렬 전달 필요. <code>kd_tree</code>에서는 사용 불가.'},
+ {t:'코사인 거리',e:'cosine',h:1,d:'두 벡터의 <b>각도(방향)</b>를 측정. 크기가 아니라 패턴이 중요할 때.',x:'⚠️ <code>kd_tree</code>/<code>ball_tree</code>에서 <b>사용 불가</b>. <code>brute</code>만 가능(auto는 자동으로 brute 선택). 텍스트·TF-IDF에 주로 사용.'},
+]},
+{g:'knn',cat:'C. KNN 하이퍼파라미터',items:[
+ {t:'n_neighbors (K)',e:'n_neighbors',h:1,d:'참고할 이웃의 개수. <b>가장 중요한 손잡이.</b> 기본값 5.',x:'작으면 과대적합, 크면 과소적합. 분류는 동점 방지를 위해 홀수로.'},
+ {t:'weights',e:'weights',h:1,d:'이웃들의 의견을 합치는 방식. 기본값 <code>\'uniform\'</code>.',x:'<code>\'uniform\'</code>: K개 모두 1/K씩 동등. <code>\'distance\'</code>: 거리의 역수로 가중 → 가까운 이웃이 더 강하게 반영되고 예측선이 부드러워진다.'},
+ {t:'algorithm',e:'algorithm',d:'이웃을 찾는 탐색 알고리즘. 기본값 <code>\'auto\'</code>.',x:'실측: 피처>15면 brute, K≥n/2면 brute, 트리 미지원 metric이면 brute를 자동 선택. 그 외에는 kd_tree.'},
+ {t:'leaf_size',e:'leaf_size',d:'트리 알고리즘의 리프 크기. 기본값 30.',x:'<b>결과에는 영향 없고</b> 속도와 메모리에만 영향을 준다.'},
+ {t:'p',e:'p',d:'민코프스키 거리의 차수. 기본값 2.',x:'⚠️ <code>metric</code>이 minkowski가 아니면 <b>에러 없이 조용히 무시</b>된다.'},
+]},
+{g:'tree',cat:'D. 결정 트리 구조',items:[
+ {t:'루트 노드',e:'Root Node',h:1,d:'전체 데이터가 있는 <b>최상위</b> 노드. 트리의 시작점.',x:'"어떤 특성으로 첫 분기를 할까"가 여기서 결정된다.'},
+ {t:'규칙 노드',e:'Internal / Decision Node',d:'분기 조건(질문)이 들어 있는 중간 노드.',x:'"공부시간 ≤ 5?" 같은 IF 조건이 여기 있다.'},
+ {t:'리프 노드',e:'Leaf / Terminal Node',h:1,d:'더 이상 나누지 않는 <b>끝</b> 노드. 최종 예측값이 여기서 나온다.',x:'분류는 <b>최빈 클래스</b>, 회귀는 <b>평균값</b>. 그래서 트리 회귀의 예측이 계단 모양이다.'},
+ {t:'분할',e:'split',h:1,d:'"이 특성이 임계값보다 큰가?"로 데이터를 둘로 나누는 것.',x:'크기가 아니라 <b>순서</b>만 보므로 트리는 스케일링이 불필요하다.'},
+ {t:'순수 노드',e:'Pure Node',h:1,d:'한 클래스만 들어 있어 불순도가 <b>0</b>인 노드.',x:'예시의 "여 · 4명 (A 0 · B 4)" 노드가 여기에 해당한다.'},
+]},
+{g:'tree',cat:'E. 분기 지표 (불순도)',items:[
+ {t:'지니 불순도',e:'Gini Impurity',h:1,d:'1 − Σpᵢ² — 노드 안 클래스가 얼마나 섞였는지. <b>작을수록</b> 좋다.',x:'CART의 기본 지표. 로그 연산이 없어 빠르다. 2클래스일 때 최대 0.5.'},
+ {t:'엔트로피',e:'Entropy',h:1,d:'−Σpᵢlog₂(pᵢ) — 정보 이론의 무질서도. <b>작을수록</b> 좋다.',x:'2클래스일 때 최대 1. 지니와 결과가 거의 같지만 로그 때문에 느리다.'},
+ {t:'정보 이득',e:'Information Gain, IG',h:1,d:'부모 엔트로피 − 자식 가중평균 엔트로피. <b>클수록</b> 좋다.',x:'⚠️ 엔트로피와 <b>방향이 반대</b>. "얼마나 줄였나"를 재는 값이기 때문.'},
+ {t:'가중평균 불순도',e:'weighted impurity',h:1,d:'자식 노드들의 불순도를 <b>샘플 수 비율</b>로 가중평균한 값.',x:'예시: (6/10)(0.278) + (4/10)(0) = 0.167. 샘플이 많은 노드가 더 큰 영향을 준다.'},
+ {t:'이득률',e:'Gain Ratio',d:'정보 이득을 분기 개수로 보정한 값. C4.5가 사용.',x:'정보 이득이 "범주가 많은 특성"을 편애하는 편향을 보완한다.'},
+ {t:'squared_error (MSE)',e:'criterion',h:1,d:'회귀 트리의 기본 분기 지표. 리프 내 오차 제곱합을 최소화.',x:'리프의 예측값은 그 노드 샘플들의 <b>평균</b>.'},
+ {t:'absolute_error (MAE)',e:'criterion',d:'오차 절댓값 기준. 이상치의 영향을 줄인다.',x:'⚠️ 리프 예측값이 평균이 아니라 <b>중앙값</b>이 된다. <code>[1,2,3,10,20]</code> → squared_error는 7.2, absolute_error는 3.0.'},
+]},
+{g:'tree',cat:'F. 재귀적 분할 알고리즘',items:[
+ {t:'재귀적 알고리즘',e:'Recursive Algorithm',h:1,d:'트리를 <b>어떤 구조로</b> 만들지 정하는 제어 방식.',x:'불순도 지표(어디서 나눌지)와 역할이 다르다. 비유하면 시공 방식 vs 측정 도구.'},
+ {t:'CART',e:'Classification And Regression Trees',h:1,d:'항상 <b>2개</b>로만 나누는 이진 트리. 분류·회귀 모두 지원.',x:'<b>scikit-learn이 구현한 유일한 알고리즘.</b> 지니/MSE를 쓰고 ccp_alpha 가지치기를 지원한다.'},
+ {t:'ID3',e:'Iterative Dichotomiser 3',d:'범주형 전용 <b>다중 분기</b>. 정보 이득 사용.',x:'연속형 변수 처리·가지치기 미지원. sklearn에 없음.'},
+ {t:'C4.5',e:'C4.5',d:'ID3 개량형. 연속형·결측치 처리 가능, 이득률 사용.',x:'<b>scikit-learn은 지원하지 않는다.</b>'},
+ {t:'CHAID',e:'Chi-squared Automatic Interaction Detection',d:'카이제곱·F검정 기반 다중 분기.',x:'통계적으로 유의하지 않으면 분할을 멈추는 사전 가지치기 특성.'},
+]},
+{g:'tree',cat:'G. 트리 하이퍼파라미터 · 과적합 제어',items:[
+ {t:'criterion',e:'criterion',h:1,d:'분기 지표 선택.',x:'분류: <code>\'gini\'</code>(기본), <code>\'entropy\'</code>, <code>\'log_loss\'</code> / 회귀: <code>\'squared_error\'</code>(기본), <code>\'absolute_error\'</code>, <code>\'friedman_mse\'</code>, <code>\'poisson\'</code>'},
+ {t:'max_depth',e:'max_depth',h:1,d:'트리의 최대 깊이. <b>가장 중요한 과적합 제어 장치.</b> 기본 None.',x:'제한하지 않으면 리프마다 샘플 1개가 될 때까지 쪼개 완전히 과적합한다.'},
+ {t:'min_samples_split',e:'min_samples_split',d:'분할하려면 노드에 최소 몇 개가 있어야 하는지. 기본 2.',x:'클수록 분할이 억제되어 트리가 단순해진다.'},
+ {t:'min_samples_leaf',e:'min_samples_leaf',h:1,d:'리프가 최소한 가져야 할 샘플 수. 기본 1.',x:'일반화에 직접적으로 도움이 된다. 2~5로 올려보는 것이 흔한 첫 시도.'},
+ {t:'max_features',e:'max_features',d:'각 분기에서 고려할 특성의 최대 개수.',x:'무작위성을 주어 과적합을 줄인다. RandomForest의 핵심 아이디어.'},
+ {t:'ccp_alpha',e:'Cost-Complexity Pruning',h:1,d:'다 키운 트리를 <b>사후에</b> 잘라내는 가지치기 강도. 기본 0.',x:'클수록 많이 쳐낸다. <code>cost_complexity_pruning_path()</code>로 후보 alpha를 얻을 수 있다.'},
+ {t:'splitter',e:'splitter',d:'분기점 탐색 전략. <code>\'best\'</code>(기본) 또는 <code>\'random\'</code>.',x:''},
+ {t:'사전 가지치기',e:'Pre-pruning',h:1,d:'트리가 자라기 <b>전에</b> 성장을 제한하는 방식.',x:'<code>max_depth</code>, <code>min_samples_*</code>. 가장 먼저 쓰는 방법.'},
+ {t:'사후 가지치기',e:'Post-pruning',d:'다 키운 뒤 불필요한 가지를 <b>잘라내는</b> 방식.',x:'<code>ccp_alpha</code>가 이것이다.'},
+ {t:'앙상블',e:'Ensemble',h:1,d:'단일 트리의 한계를 여러 트리를 결합해 극복.',x:'RandomForest, GradientBoosting, XGBoost, LightGBM. 실무에서는 사실상 이쪽이 정답.'},
+ {t:'feature_importances_',e:'feature_importances_',d:'각 특성이 불순도를 줄인 정도의 합. 변수 중요도.',x:'⚠️ 고윳값이 많은 변수를 과대평가하는 편향이 있다. 대안은 <code>permutation_importance</code>.'},
+]},
+{g:'code',cat:'H. 배열 다루기 관용구 (numpy)',items:[
+ {t:'X[:, 2:]',e:'열 슬라이싱',h:1,d:'"모든 행, 2번 열부터 끝까지" — 특정 열만 골라낸다.',c:"iris.data[:, 2:]      # (150, 4) -> (150, 2)  꽃잎 2개만\niris.data[:, [0, 2]]  # 0번과 2번 열만\nX_train_scaled[:, 0]  # 첫 번째 열 전체 (1차원이 됨)",x:'쉼표 앞이 행, 뒤가 열. 2차원 배열에서 가장 많이 보는 표기.'},
+ {t:'.ravel()',e:'차원 펴기',h:1,d:'다차원 배열을 <b>1차원</b>으로 편다.',c:"np.zeros((3, 1)).ravel().shape   # (3,)\nxx.ravel()                       # (261,264) -> (68904,)\ny = np.sin(X).ravel()            # (100,1) -> (100,)  y는 1차원이어야 함",x:'<code>.flatten()</code>은 항상 복사본, <code>.ravel()</code>은 가능하면 뷰(더 빠름).'},
+ {t:'.reshape(-1, 1)',e:'열벡터 만들기',h:1,d:'1차원을 <b>(n, 1) 2차원</b>으로. sklearn 입력 형태를 맞출 때.',c:"np.arange(6).reshape(-1, 1)      # (6,) -> (6, 1)\nX = np.array([1,2,3,4,5]).reshape(-1, 1)\n# -1은 '나머지는 알아서 계산하라'는 뜻",x:'<code>Expected 2D array, got 1D array</code> 에러가 나면 이걸 쓴다.'},
+ {t:'np.c_[a, b]',e:'열 방향 결합',h:1,d:'두 1차원 배열을 <b>열로 붙여</b> 2차원을 만든다.',c:"np.c_[xx.ravel(), yy.ravel()]    # (68904,) 2개 -> (68904, 2)\n# 결정 경계 그릴 때 격자 좌표를 모델 입력 형태로 바꾸는 관용구",x:'<code>np.column_stack</code>과 같은 역할. 대괄호를 쓰는 것에 주의(함수 아님).'},
+ {t:'np.meshgrid',e:'격자 만들기',h:1,d:'x좌표 배열과 y좌표 배열로 <b>모든 조합</b>의 좌표판 2장을 만든다.',c:"xx, yy = np.meshgrid(np.arange(0, 5, 0.02),\n                     np.arange(0, 5, 0.02))\n# 결정 경계 시각화의 1단계. 간격을 줄이면 부드럽지만 느려진다",x:'격자점 하나하나를 모델에 물어보고 색을 칠하는 것이 결정 경계 그림의 원리.'},
+ {t:'np.linalg.norm(A - b, axis=1)',e:'행별 거리 계산',h:1,d:'모든 행과 기준점 b 사이의 <b>유클리드 거리</b>를 한 번에.',c:"d = np.linalg.norm(all_points - query_point, axis=1)\n# axis=1 : 행 방향으로 눌러서 '샘플별' 결과\n# KNN이 내부적으로 하는 계산과 같다",x:'브로드캐스팅으로 <code>A - b</code>가 자동 확장된다.'},
+ {t:'np.argsort(d)[:k]',e:'가까운 k개 인덱스',h:1,d:'정렬 순서의 <b>인덱스</b>를 반환. Top-K 추출의 정석.',c:"nearest_3 = np.argsort(distances)[:3]   # 가장 가까운 3개의 인덱스\nnp.sort(distances)[[2, 4]]              # 3번째, 5번째로 가까운 '거리'",x:'<code>sort</code>는 값을, <code>argsort</code>는 위치를 준다.'},
+ {t:'np.vstack / np.hstack',e:'배열 붙이기',d:'위아래(vertical) / 좌우(horizontal)로 결합.',c:"all_points = np.vstack([class_a, class_b])   # (5,2)+(5,2) -> (10,2)",x:''},
+ {t:'np.sort(a, axis=0)',e:'정렬',d:'축을 지정해 정렬. axis=0이면 행 방향(각 열 안에서).',c:"X = np.sort(5 * np.random.rand(100, 1), axis=0)\n# 예측선을 그릴 때 x가 순서대로여야 선이 뒤엉키지 않는다",x:''},
+ {t:'np.linspace / np.arange',e:'수열 생성',h:1,d:'linspace는 <b>개수</b>를, arange는 <b>간격</b>을 지정.',c:"np.linspace(0, 5, 500)    # 0~5를 500등분 (양 끝 포함)\nnp.arange(0, 5, 0.02)     # 0부터 5까지 0.02 간격",x:'실수 간격은 부동소수 오차가 생기므로 linspace가 안전하다.'},
+ {t:'np.random.seed / default_rng',e:'난수 고정',h:1,d:'실행할 때마다 <b>같은 난수</b>가 나오게 한다.',c:"np.random.seed(42)                  # 구식 (여전히 동작)\nrng = np.random.default_rng(42)     # 권장 방식\nrng.normal(0, 0.1, 100)             # 평균0 표준편차0.1 잡음",x:'없으면 결과 재현이 불가능해 비교 자체가 성립하지 않는다.'},
+ {t:'.shape 읽는 법',e:'shape',h:1,d:'<code>(행, 열)</code> = <code>(샘플 수, 특성 수)</code>.',c:"X.shape       # (150, 4)  샘플 150개, 특성 4개\ny.shape       # (150,)    1차원\nX_train.shape # (120, 2)",x:'에러가 나면 <b>제일 먼저 찍어볼 것</b>. 대부분의 shape 에러는 여기서 잡힌다.'},
+]},
+{g:'code',cat:'I. scikit-learn 관용구',items:[
+ {t:'fit / transform / fit_transform',e:'전처리 3형제',h:1,d:'<code>fit</code>=기준 계산, <code>transform</code>=적용, <code>fit_transform</code>=둘 다.',c:"X_train_scaled = scaler.fit_transform(X_train)  # train: 기준 계산+변환\nX_test_scaled  = scaler.transform(X_test)       # test: 변환만!\n# test에 fit하면 데이터 누수",x:'<b>코드 리뷰의 첫 번째 체크포인트.</b> 이 구분만 봐도 코드 품질을 짐작할 수 있다.'},
+ {t:'model.fit(X, y)',e:'학습',h:1,d:'모델 학습. X는 항상 <b>2차원</b>, y는 <b>1차원</b>.',c:"knn.fit(X_train_scaled, y_train)\n# 지도학습은 (X, y) 둘 다, 비지도학습은 fit(X)만",x:'KNN에서는 사실상 데이터를 저장만 한다(게으른 학습).'},
+ {t:'predict / predict_proba',e:'예측',h:1,d:'클래스 라벨 / 클래스별 확률을 반환.',c:"y_pred  = knn.predict(X_test_scaled)          # [0, 1, 2, ...]\nproba   = knn.predict_proba(X_test_scaled)    # [[0.8, 0.2, 0.0], ...]\n# roc_auc 계산에는 predict가 아니라 predict_proba가 필요",x:''},
+ {t:'train_test_split 반환 순서',e:'반환 순서',h:1,d:'<code>X_train, X_test, y_train, y_test</code> — <b>X끼리 먼저, y끼리 나중.</b>',c:"X_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, stratify=y, random_state=42)",x:'순서를 바꿔 받으면 조용히 잘못된 결과가 나온다. 가장 흔한 실수 중 하나.'},
+ {t:'뒤에 붙은 언더스코어',e:'trailing underscore',h:1,d:'<code>coef_</code>처럼 뒤에 <code>_</code>가 붙으면 <b>학습으로 얻어진 값</b>이라는 뜻.',c:"model.coef_              # 회귀 계수\ntree.feature_importances_ # 변수 중요도\nscaler.mean_             # 표준화에 쓴 평균\nknn.classes_             # 클래스 목록\ngrid.best_params_        # 최적 하이퍼파라미터",x:'<code>fit()</code> 전에 접근하면 <code>NotFittedError</code>가 난다. sklearn 전체의 규칙.'},
+ {t:'make_pipeline / Pipeline',e:'파이프라인',h:1,d:'전처리와 모델을 <b>한 덩어리</b>로 묶는다.',c:"pipe = make_pipeline(StandardScaler(), KNeighborsClassifier(5))\npipe.fit(X_train, y_train)   # 스케일링+학습이 한 번에\npipe.predict(X_test)         # 예측 시 스케일링도 자동",x:'데이터 누수를 <b>구조적으로 불가능</b>하게 만든다. 저장할 때도 이걸 통째로 저장해야 한다.'},
+ {t:'GridSearchCV',e:'하이퍼파라미터 탐색',h:1,d:'후보 조합을 전수 탐색하며 교차검증으로 최적을 찾는다.',c:"gs = GridSearchCV(\n    make_pipeline(StandardScaler(), KNeighborsClassifier()),\n    {'kneighborsclassifier__n_neighbors': [3, 5, 7, 9],\n     'kneighborsclassifier__weights': ['uniform', 'distance']},\n    cv=5, scoring='accuracy')\ngs.fit(X, y)\ngs.best_params_, gs.best_score_, gs.best_estimator_",x:'<code>단계이름__파라미터</code> — <b>언더스코어 2개</b>. make_pipeline은 이름이 소문자 클래스명으로 자동 생성된다.'},
+ {t:'export_text',e:'트리 규칙 출력',h:1,d:'학습된 트리를 IF-THEN 텍스트로 출력.',c:"print(export_text(model, feature_names=['공부 시간']))\n# 분류는 'class: 0', 회귀는 'value: [30.00]'을 출력한다\nprint(export_text(clf, feature_names=[...], show_weights=True))\n# 분류에서 클래스별 개수를 보려면 show_weights=True",x:'설치가 필요한 graphviz보다 간편해서 실무에서 더 자주 쓴다.'},
+ {t:'kneighbors()',e:'이웃 확인',d:'특정 샘플의 이웃이 누구인지, 거리는 얼마인지 직접 확인.',c:"dist, idx = knn.kneighbors(X_test[:1])\n# dist: 이웃까지의 거리, idx: 학습 데이터에서의 인덱스\n# '왜 이렇게 예측했지?'를 파고들 때 유용",x:''},
+ {t:'confusion_matrix',e:'혼동 행렬',h:1,d:'실제(행) × 예측(열) 교차표. 대각선이 정답.',c:"cm = confusion_matrix(y_test, y_pred)\ntn, fp, fn, tp = cm.ravel()          # 이진 분류일 때\nConfusionMatrixDisplay.from_estimator(\n    knn, X_test_scaled, y_test, display_labels=iris.target_names)",x:'정확도 숫자 하나보다 "무엇을 무엇으로 착각했는지"가 훨씬 유용하다.'},
+]},
+{g:'code',cat:'J. 시각화 관용구',items:[
+ {t:'plt.rcParams 한글 폰트',e:'한글 깨짐 방지',h:1,d:'설정하지 않으면 그래프의 한글이 전부 □□□로 깨진다.',c:"import platform\nos_name = platform.system()\nif os_name == 'Windows':  plt.rcParams['font.family'] = 'Malgun Gothic'\nelif os_name == 'Darwin': plt.rcParams['font.family'] = 'AppleGothic'\nelse:                     plt.rcParams['font.family'] = 'NanumGothic'\nplt.rcParams['axes.unicode_minus'] = False   # 마이너스 기호 깨짐 방지",x:'Darwin = macOS의 커널 이름. 한글 폰트를 쓰면 마이너스가 깨지므로 두 번째 줄이 세트다.'},
+ {t:'plt.subplots(1, 2)',e:'여러 그래프',h:1,d:'1행 2열로 그래프를 배치. <code>axes[0]</code>, <code>axes[1]</code>로 접근.',c:"fig, axes = plt.subplots(1, 2, figsize=(14, 5))\naxes[0].scatter(...)        # 왼쪽 그래프\naxes[1].set_title(...)      # 오른쪽 그래프\nplt.tight_layout()          # 제목·축 겹침 자동 조정",x:'<code>plt.xxx()</code>는 현재 축에, <code>ax.set_xxx()</code>는 특정 축에 적용된다는 차이가 있다.'},
+ {t:'contourf',e:'영역 색칠',h:1,d:'등고선을 채우는 함수. 결정 경계의 <b>배경</b>을 칠할 때 쓴다.',c:"axes[0].contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.Set1)\n# Z가 0/1/2 정수라서 결과적으로 클래스별 색면이 된다\n# alpha를 낮춰야 위에 찍는 점들이 잘 보인다",x:'⚠️ scatter와 색이 어긋날 수 있다. 안전하게 하려면 양쪽에 <code>vmin=0, vmax=2</code>를 지정.'},
+ {t:'plt.Circle / add_patch',e:'도형 그리기',d:'원·사각형 등 도형을 축에 추가.',c:"circle = plt.Circle(center, radius, fill=False, linestyle='--')\nax.add_patch(circle)      # 만든 뒤 반드시 add_patch로 붙여야 보인다\nax.set_aspect('equal')    # 원이 타원으로 찌그러지지 않게",x:'<code>set_aspect(\'equal\')</code>을 빼먹으면 원이 타원으로 보인다.'},
+ {t:'sns.heatmap(annot, fmt)',e:'히트맵',h:1,d:'혼동 행렬을 색과 숫자로 표시.',c:"sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',\n            xticklabels=iris.target_names,\n            yticklabels=iris.target_names,\n            ax=axes[1], cbar=False)",x:'<code>fmt=\'d\'</code>를 빼면 <code>1.2e+01</code>처럼 지수 표기로 나온다. <code>ax=</code>로 그릴 위치를 지정.'},
+ {t:'zorder',e:'그리는 순서',d:'값이 클수록 <b>위에</b> 그려진다.',c:"ax.scatter(..., zorder=3)   # 점\nax.plot(...,    zorder=2)   # 선 (점 아래)\nax.scatter(query, zorder=5) # 가장 위",x:'점이 선에 가려질 때 조정한다.'},
+ {t:'alpha',e:'투명도',d:'0(투명) ~ 1(불투명).',c:"ax.scatter(X, y, alpha=0.7)   # 점이 겹쳐도 밀도가 보인다\nax.contourf(..., alpha=0.3)   # 배경은 옅게",x:''},
+ {t:'plot_tree',e:'트리 그림',d:'결정 트리를 그림으로 출력. graphviz 설치 불필요.',c:"from sklearn.tree import plot_tree\nplt.figure(figsize=(14, 8))\nplot_tree(model, feature_names=list(X.columns),\n          class_names=['음성','양성'], filled=True, rounded=True)",x:'문서의 pydotplus+graphviz 방식보다 훨씬 간편하다.'},
+ {t:'f-string 포맷',e:'f\"{x:.4f}\"',h:1,d:'소수점 자리수 지정 출력.',c:"print(f'RMSE: {rmse:.4f}')        # 0.1002\nprint(f'정확도: {acc:.1%}')        # 97.3%\nprint(f'{name:<10}{score:>8.4f}')  # 왼쪽정렬10칸, 오른쪽정렬8칸",x:'<code>:.4f</code>=소수4자리, <code>:.1%</code>=퍼센트, <code>&lt;</code>/<code>&gt;</code>=정렬.'},
+]},
+];
+
+const out=document.getElementById('out'), toc=document.getElementById('toc');
+const GN={knn:'KNN', tree:'결정 트리', code:'코드 관용구 사전'};
+let filt='all', qtext='';
+const TOTAL=D.reduce((a,s)=>a+s.items.length,0);
+document.getElementById('nterm').textContent='항목 '+TOTAL+'개';
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function slug(c){return c.replace(/[^a-zA-Z0-9가-힣]/g,'-');}
+
+function build(){
+  out.innerHTML=''; toc.innerHTML='';
+  let curG=null, shown=0;
+  const q=qtext.trim().toLowerCase();
+  D.forEach(sec=>{
+    if(['knn','tree','code'].includes(filt) && sec.g!==filt) return;
+    let items=sec.items;
+    if(filt==='hot') items=items.filter(i=>i.h);
+    if(q) items=items.filter(i=>(i.t+' '+i.e+' '+i.d+' '+(i.x||'')+' '+(i.c||'')+' '+sec.cat).toLowerCase().includes(q));
+    if(!items.length) return;
+    shown+=items.length;
+    if(sec.g!==curG){
+      curG=sec.g;
+      const h=document.createElement('h2'); h.className='grp'; h.id=curG;
+      h.textContent=GN[curG]; out.appendChild(h);
+    }
+    const id=slug(sec.cat);
+    const a=document.createElement('a'); a.href='#'+id; a.textContent=sec.cat; toc.appendChild(a);
+    const h3=document.createElement('h3'); h3.className='cat'; h3.id=id;
+    h3.innerHTML='<span>'+sec.cat+'</span>'; out.appendChild(h3);
+    items.forEach(it=>{
+      const div=document.createElement('div');
+      div.className='term';
+      const isCode = sec.g==='code';
+      div.innerHTML='<div><span class="t'+(isCode?' code':'')+'">'+esc(it.t)+'</span>'+
+        '<span class="en">'+esc(it.e)+'</span>'+(it.h?'<span class="star">핵심</span>':'')+'</div>'+
+        '<div class="d">'+it.d+'</div>'+
+        (it.c?'<pre><code>'+esc(it.c)+'</code></pre>':'')+
+        (it.x?'<div class="x">'+it.x+'</div>':'');
+      div.addEventListener('click',()=>{ if(document.body.classList.contains('cards')) div.classList.toggle('open'); });
+      out.appendChild(div);
+    });
+  });
+  if(!shown) out.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+  ['큰 그림|map','KNN 그림|knnviz','트리 그림|treeviz','코드 읽는 법|read','정정 사항|fix','시험 단골|qa'].forEach(s=>{
+    const [n,i]=s.split('|');
+    const a=document.createElement('a'); a.href='#'+i; a.textContent='▸ '+n; toc.appendChild(a);
+  });
+  document.getElementById('cnt').textContent=shown+' / '+TOTAL+'개 표시';
+}
+document.getElementById('q').addEventListener('input',e=>{qtext=e.target.value;build();});
+document.querySelectorAll('.chip[data-f]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-f]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true'); filt=c.dataset.f; build();
+}));
+document.getElementById('cardbtn').addEventListener('click',e=>{
+  const on=document.body.classList.toggle('cards');
+  e.target.setAttribute('aria-pressed', on?'true':'false');
+  e.target.textContent = on ? '암기 모드 끄기' : '암기 모드';
+  if(!on) document.querySelectorAll('.term.open').forEach(t=>t.classList.remove('open'));
+});
+build();
+</script>
+</body>
+</html>
